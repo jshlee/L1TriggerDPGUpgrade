@@ -5,7 +5,6 @@
 
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
-#include "DataFormats/MuonDetId/interface/GEMDetId.h"
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
 
 using namespace L1TMuon;
@@ -18,13 +17,10 @@ TrackSeed::TrackSeed( const TriggerPrimitiveRef& tp) {
   case TriggerPrimitive::kDT:
     _type = kDTOnly;
     break;
-  case TriggerPrimitive::kGEM:
-    _type = kGEMOnly;
-    break;
   case TriggerPrimitive::kRPC: // one hit seeds from RPCs not allowed    
   default:
     throw cms::Exception("Invalid Subsytem") 
-      << "L1TMuonTrackSeed The specified subsystem for this track stub is out of range"
+      << "The specified subsystem for this track stub is out of range"
       << std::endl;
   }
   addStub(tp);  
@@ -47,7 +43,7 @@ TrackSeed::TrackSeed( const TriggerPrimitiveRef& tp1,
     _type = kRPCRPC;
   } else {
     throw cms::Exception("Invalid Subsytem") 
-      << "L1TMuonTrackSeed The specified subsystem for this track stub is out of range"
+      << "The specified subsystem for this track stub is out of range"
       << std::endl;
   }
   addStub(tp1);
@@ -77,13 +73,9 @@ void TrackSeed::addStub(const TriggerPrimitiveRef& stub) {
       offset = kRPCf;
     station = stub->detId<RPCDetId>().station(); 
     break;
-  case TriggerPrimitive::kGEM:    
-    offset = kGEM;
-    station = stub->detId<GEMDetId>().station();
-    break;
   default:
     throw cms::Exception("Invalid Subsytem") 
-      << "L1TMuonTrackSeed The specified subsystem for this track stub is out of range"
+      << "The specified subsystem for this track stub is out of range"
       << std::endl;
   }  
 

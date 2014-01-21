@@ -4,19 +4,13 @@
    <version ClassVersion="10" checksum="3058428762"/>
   </class>
   <class name="L1TMuon::TriggerPrimitive::CSCData" ClassVersion="10">
-   <version ClassVersion="10" checksum="2046923628"/>
+   <version ClassVersion="10" checksum="2831376300"/>
   </class>
   <class name="L1TMuon::TriggerPrimitive::DTData" ClassVersion="10">
    <version ClassVersion="10" checksum="2509427716"/>
   </class>
-  <class name="L1TMuon::TriggerPrimitive::GEMData" ClassVersion="10">
-   <version ClassVersion="10" checksum="1173811648"/>
-  </class>
-  <class name="L1TMuon::TriggerPrimitive::HCALData" ClassVersion="10">
-   <version ClassVersion="10" checksum="1908837509"/>
-  </class>
   <class name="L1TMuon::TriggerPrimitive" ClassVersion="10">
-   <version ClassVersion="10" checksum="2508698288"/>
+   <version ClassVersion="10" checksum="189673280"/>
   </class>
   <class name="edm::Wrapper<L1TMuon::TriggerPrimitive>"/>
   <class name="L1TMuon::TriggerPrimitiveCollection"/>
@@ -26,8 +20,8 @@
   <class name="L1TMuon::TriggerPrimitiveList"/>
   <class name="L1TMuon::TriggerPrimitiveStationMap"/>
 
-  <class name="L1TMuon::InternalTrack" ClassVersion="10">
-   <version ClassVersion="10" checksum="640934696"/>
+  <class name="L1TMuon::InternalTrack" ClassVersion="11">
+   <version ClassVersion="11" checksum="2985826856"/>
   </class>
   <class name="edm::Wrapper<L1TMuon::InternalTrack>"/>
   <class name="L1TMuon::InternalTrackCollection"/>

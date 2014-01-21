@@ -28,8 +28,8 @@ namespace L1TMuon{
   class TrackSeed {   
 
   public:
-    enum seed_type{ kDTOnly, kCSCOnly, kGEMOnly, kCSCRPC, kDTRPC, kRPCRPC, kNSeedTypes };
-    enum subsystem_offset{ kDT, kRPCb, kCSC, kRPCf, kGEM };
+    enum seed_type{ kDTOnly, kCSCOnly, kCSCRPC, kDTRPC, kRPCRPC, kNSeedTypes };
+    enum subsystem_offset{ kDT, kRPCb, kCSC, kRPCf };
     TrackSeed():_endcap(0),_wheel(0),_sector(0),_type(kNSeedTypes),_mode(0) {}
       
     TrackSeed( const TriggerPrimitiveRef& );
@@ -48,7 +48,6 @@ namespace L1TMuon{
     unsigned long cscMode()  const { return (_mode & 0xf<<4*kCSC)>>4*kCSC; }
     unsigned long rpcbMode() const { return (_mode & 0xf<<4*kRPCb)>>4*kRPCb; }
     unsigned long rpcfMode() const { return (_mode & 0xf<<4*kRPCf)>>4*kRPCf; }
-    unsigned long gemMode()  const { return (_mode & 0xf<<4*kGEM)>>4*kGEM; }
 
     void print(std::ostream&) const;
 

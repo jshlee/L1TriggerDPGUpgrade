@@ -4,8 +4,6 @@
 // event setup stuff / geometries
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
-#include "Geometry/Records/interface/CaloGeometryRecord.h"
-#include "Geometry/Records/interface/HcalGeometryRecord.h"
 
 #include "Geometry/CSCGeometry/interface/CSCGeometry.h"
 #include "L1Trigger/CSCCommonTrigger/interface/CSCConstants.h"
@@ -14,13 +12,6 @@
 #include "Geometry/DTGeometry/interface/DTGeometry.h"
 #include "L1Trigger/DTUtilities/interface/DTTrigGeom.h"
 #include "Geometry/RPCGeometry/interface/RPCGeometry.h"
-
-#include "Geometry/GEMGeometry/interface/GEMGeometry.h"
-
-#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
-#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
-#include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
-#include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
 #include <cmath> // for pi
 
@@ -45,12 +36,6 @@ GeometryTranslator::calculateGlobalEta(const TriggerPrimitive& tp) const {
   case TriggerPrimitive::kRPC:
     return calcRPCSpecificEta(tp);
     break;
-  case TriggerPrimitive::kGEM:
-    return calcGEMSpecificEta(tp);
-    break;
-  case TriggerPrimitive::kHCAL:
-    return calcHCALSpecificEta(tp);
-    break;
   default:
     return std::nan("Invalid TP type!"); 
     break;
@@ -68,12 +53,6 @@ GeometryTranslator::calculateGlobalPhi(const TriggerPrimitive& tp) const {
     break;
   case TriggerPrimitive::kRPC:
     return calcRPCSpecificPhi(tp);
-    break;
-  case TriggerPrimitive::kGEM:
-    return calcGEMSpecificPhi(tp);
-    break;
-  case TriggerPrimitive::kHCAL:
-    return calcHCALSpecificPhi(tp);
     break;
   default:
     return std::nan("Invalid TP type!");
@@ -93,12 +72,6 @@ GeometryTranslator::calculateBendAngle(const TriggerPrimitive& tp) const {
   case TriggerPrimitive::kRPC:
     return calcRPCSpecificBend(tp);
     break;
-  case TriggerPrimitive::kGEM:
-    return calcGEMSpecificBend(tp);
-    break;
-  case TriggerPrimitive::kHCAL:
-    return calcHCALSpecificBend(tp);
-    break;
   default:
     return std::nan("Invalid TP type!");
     break;
@@ -106,25 +79,14 @@ GeometryTranslator::calculateBendAngle(const TriggerPrimitive& tp) const {
 }
 
 void GeometryTranslator::checkAndUpdateGeometry(const edm::EventSetup& es) {
-  // let's remove caching...
   const MuonGeometryRecord& geom = es.get<MuonGeometryRecord>();
   unsigned long long geomid = geom.cacheIdentifier();
-  //if( _geom_cache_id != geomid ) {
+  if( _geom_cache_id != geomid ) {
     geom.get(_georpc);  
     geom.get(_geocsc);    
     geom.get(_geodt);
-    geom.get(_geogem);
     _geom_cache_id = geomid;
-    //}  
-
-  const CaloGeometryRecord& geomC = es.get<CaloGeometryRecord>();
-  geomid = geomC.cacheIdentifier(); 
-  //if( _geom_cache_id != geomid ) {
-    geomC.get(_geohcal);
-    geomC.get(_geohcaltrig);
-    _geom_cache_id = geomid;
-    //}
-
+  }  
 }
 
 GlobalPoint 
@@ -303,72 +265,4 @@ isCSCCounterClockwise(const std::unique_ptr<const CSCLayer>& layer) const {
   const double phiN = layer->centerOfStrip(nStrips).phi();
   return ( (std::abs(phi1 - phiN) < M_PI  && phi1 >= phiN) || 
 	   (std::abs(phi1 - phiN) >= M_PI && phi1 < phiN)     );  
-}
-
-
-GlobalPoint 
-GeometryTranslator::getHCALSpecificPoint(const TriggerPrimitive& tp) const {
-  const HcalTrigTowerDetId id(tp.detId<HcalTrigTowerDetId>());
-
-  std::vector<HcalDetId> dets = _geohcaltrig->detIds(id);
-
-  double x = 0., y = 0., z = 0.;
-  for (unsigned int i=0; i< dets.size(); i++) {
-    x+= _geohcal->getPosition(dets.at(i)).x();
-    y+= _geohcal->getPosition(dets.at(i)).y();
-    z+= _geohcal->getPosition(dets.at(i)).z();
-  }
-
-  if(dets.empty()) {
-    std::cout << "no HcalDetId corresponding to HcalTrigTowerDetId!" 
-	      << std::endl;
-    return GlobalPoint(0.1,0.,9999.); // phi=0 and very high eta...
-  }
-
-  return GlobalPoint(x/dets.size(),y/dets.size(),z/dets.size());
-
-}
-
-double 
-GeometryTranslator::calcHCALSpecificEta(const TriggerPrimitive& tp) const {  
-  return getHCALSpecificPoint(tp).eta();
-}
-
-double 
-GeometryTranslator::calcHCALSpecificPhi(const TriggerPrimitive& tp) const {  
-  return getHCALSpecificPoint(tp).phi();
-}
-
-// this function actually does nothing since HCAL
-// hits are point-like objects
-double 
-GeometryTranslator::calcHCALSpecificBend(const TriggerPrimitive& tp) const {
-  return 0.0;
-}
-
-
-GlobalPoint 
-GeometryTranslator::getGEMSpecificPoint(const TriggerPrimitive& tp) const {
-  const GEMDetId id(tp.detId<GEMDetId>());
-  std::unique_ptr<const GEMEtaPartition>  roll(_geogem->etaPartition(id));
-  const uint16_t strip = tp.getGEMData().strip;
-  const LocalPoint lp = roll->centreOfStrip(strip);
-  const GlobalPoint gp = roll->toGlobal(lp);
-  roll.release();  
-  return gp;
-}
-
-double 
-GeometryTranslator::calcGEMSpecificEta(const TriggerPrimitive& tp) const {  
-  return getGEMSpecificPoint(tp).eta();
-}
-
-double 
-GeometryTranslator::calcGEMSpecificPhi(const TriggerPrimitive& tp) const {  
-  return getGEMSpecificPoint(tp).phi();
-}
-
-double 
-GeometryTranslator::calcGEMSpecificBend(const TriggerPrimitive& tp) const {
-  return 0.0;
 }
