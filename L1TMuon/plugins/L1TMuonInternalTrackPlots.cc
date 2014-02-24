@@ -35,7 +35,6 @@
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
-#include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
 using namespace L1TMuon;
 
@@ -127,7 +126,6 @@ convertStubsToName(const TriggerPrimitive& tp1,
   CSCDetId cscid;
   RPCDetId rpcid;
   DTChamberId dtid;
-  HcalTrigTowerDetId hcalid;
 
   type1 = tp1.subsystem();
   type2 = tp2.subsystem();
@@ -147,11 +145,6 @@ convertStubsToName(const TriggerPrimitive& tp1,
     rpcid = tp1.detId<RPCDetId>();
     name1 = (rpcid.region() == 0 ? std::string("RPCb") : std::string("RPCf"));
     station1 = rpcid.station();
-    break;
-  case TriggerPrimitive::kHCAL:
-    name1 = std::string("HCAL");
-    hcalid = tp1.detId<HcalTrigTowerDetId>();
-    station1 = hcalid.depth()+1;
     break;
   default:
     break;
@@ -173,11 +166,6 @@ convertStubsToName(const TriggerPrimitive& tp1,
     name2 = (rpcid.region() == 0 ? std::string("RPCb") : std::string("RPCf"));
     station2 = rpcid.station();
     break;
-  case TriggerPrimitive::kHCAL:
-    name2 = std::string("HCAL");
-    hcalid = tp2.detId<HcalTrigTowerDetId>();
-    station2 = hcalid.depth()+1;
-    break;
   default:
     break;
   }
@@ -194,14 +182,12 @@ makeCombinations(const InternalTrack& track, double pt) {
   //int bx1, bx2;  
   TriggerPrimitiveStationMap stubs = track.getStubs();
   for( station1 = 1; station1 <= 4; ++station1 ) {
-    for( subsystem1 = 0; subsystem1 < InternalTrack::kNSubsystems; ++subsystem1 ) {
+    for( subsystem1 = 0; subsystem1 <= 3; ++subsystem1 ) {
       const unsigned idx1 = 4*subsystem1+station1-1;
-
       if( !stubs.count(idx1) ) continue;
       TriggerPrimitiveList tps1 = stubs[idx1];
-
-      for( station2 = 1; station2 <= 4; ++station2 ) {
-	for( subsystem2 = 0; subsystem2 < InternalTrack::kNSubsystems; ++subsystem2 ) {
+      for( station2 = 0; station2 <= 4; ++station2 ) {
+	for( subsystem2 = 0; subsystem2 <=3; ++subsystem2 ) {
 	  if( subsystem1 == subsystem2 && station1 == station2 ) continue;
 	  const unsigned idx2 = 4*subsystem2+station2-1;
 	    if( !stubs.count(idx2) ) continue;	    
@@ -223,8 +209,7 @@ makeCombinations(const InternalTrack& track, double pt) {
 	      if( !detahists.count(name) ) {
 		detahists[name] = 
 		  _fs->make<TH2F>(Form("h%s_deta",name.c_str()),
-				  Form("%s #Delta#eta vs. 1/p_{T};"
-				       " 1/p_{T}^{True} GeV^{-1}; #Delta#eta",
+				  Form("%s #Delta#eta vs. 1/p_{T}; 1/p_{T}^{True} GeV^{-1}; #Delta#eta",
 				       name.c_str()),
 				  1000,0,1,
 				  500,-0.5,0.5);
@@ -233,9 +218,7 @@ makeCombinations(const InternalTrack& track, double pt) {
 	      if( !dphihists.count(name) ) {
 		dphihists[name] = 
 		  _fs->make<TH2F>(Form("h%s_dphi",name.c_str()),
-				  Form("%s #Delta#phi vs. 1/p_{T};"
-				       " 1/p_{T}^{True} GeV^{-1};"
-				       " #Delta#phi (rad)",
+				  Form("%s #Delta#phi vs. 1/p_{T}; 1/p_{T}^{True} GeV^{-1}; #Delta#phi (rad)",
 				       name.c_str()),
 				  5000,0,1,
 				  500,-0.5,0.5);
@@ -262,7 +245,7 @@ TriggerPrimitiveRef L1TMuonInternalTrackPlotter::
 getBestTriggerPrimitive(const TriggerPrimitiveList& list, 
 			unsigned subsystem) const {
   TriggerPrimitiveRef result;
-  unsigned bestquality = 0, qualtemp; // for CSCs / DTs / HCAL (just for fun)
+  unsigned bestquality = 0, qualtemp; // for CSCs / DTs
   float phiavg, bestdphi, lsize; // average strip for RPCS
   auto tp = list.cbegin();
   auto tpend = list.cend();
@@ -306,15 +289,6 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
       if( std::abs((*tp)->getCMSGlobalPhi() - phiavg) < bestdphi ) {
 	result = *tp;
 	bestdphi = std::abs((*tp)->getCMSGlobalPhi() - phiavg);
-      }
-    }
-    break;
-  case 4: // HCAL
-    for( ; tp != tpend; ++tp ) {
-      qualtemp = (*tp)->getHCALData().size;
-      if ( qualtemp > bestquality ) {
-	bestquality = qualtemp;
-	result = *tp;
       }
     }
     break;

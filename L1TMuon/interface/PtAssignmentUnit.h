@@ -11,9 +11,6 @@
 #include <vector>
 #include "L1TriggerDPGUpgrade/DataFormats/interface/L1TMuonInternalTrackFwd.h"
 #include "FWCore/Utilities/interface/InputTag.h"
-#include "FWCore/Framework/interface/ESHandle.h"
-#include "CondFormats/L1TObjects/interface/L1MuTriggerScales.h"
-#include "CondFormats/L1TObjects/interface/L1MuTriggerPtScale.h"
 
 namespace edm {
   class ParameterSet;
@@ -28,19 +25,10 @@ namespace L1TMuon {
     PtAssignmentUnit(const edm::ParameterSet&);
     virtual ~PtAssignmentUnit() {}
 
-    virtual void updateEventSetup(const edm::EventSetup&);
-
-    virtual void assignPt(InternalTrack&) = 0;
-    //    virtual void assignPt(const edm::EventSetup&, InternalTrack&) const = 0;
-
+    virtual void assignPt(const edm::EventSetup&, 
+			  InternalTrack&) const = 0;
   protected:
     std::string _name;
-    edm::ESHandle<L1MuTriggerScales> position_scales;
-    edm::ESHandle<L1MuTriggerPtScale> pt_scale;
-  private:
-    unsigned long long position_scalesCacheID;
-    unsigned long long pt_scaleCacheID;
-
   };
 }
 

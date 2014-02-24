@@ -77,14 +77,13 @@ void L1TMuonTriggerPrimitiveProducer::produce(edm::Event& ev,
   auto cend = collectors.cend();
   
   double eta,phi,bend;
-
   for( ; coll_itr != cend; ++coll_itr ) {
     std::auto_ptr<TriggerPrimitiveCollection> 
       subs_out(new TriggerPrimitiveCollection);
     auto& collector = coll_itr->second;
     
     collector->extractPrimitives(ev,es,*subs_out);
-      
+    
     auto the_tp = subs_out->begin();
     auto tp_end   = subs_out->end();    
     for ( ; the_tp != tp_end; ++the_tp ) {

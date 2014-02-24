@@ -28,10 +28,8 @@ namespace L1TMuon {
     CorridorPtRefinement(const edm::ParameterSet&);
     ~CorridorPtRefinement() {}
 
-    /* virtual void refinePt(const edm::EventSetup&,  */
-    /* 			  InternalTrack&) const; */
-    virtual void refinePt(InternalTrack&) const;
-
+    virtual void refinePt(const edm::EventSetup&, 
+			  InternalTrack&) const;
   private:
     void get_corridors_from_file();
     double solveCorridor(double rawPtHypothesis, 
