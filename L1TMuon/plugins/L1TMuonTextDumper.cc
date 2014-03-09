@@ -14,6 +14,13 @@
 #include "L1Trigger/CSCCommonTrigger/interface/CSCPatternLUT.h"
 #include "L1Trigger/CSCTrackFinder/test/src/RefTrack.h"
 
+#include <L1Trigger/CSCTrackFinder/interface/CSCTFPtLUT.h>
+#include "CondFormats/L1TObjects/interface/L1MuTriggerScales.h"
+#include "CondFormats/DataRecord/interface/L1MuTriggerScalesRcd.h"
+#include "CondFormats/L1TObjects/interface/L1MuTriggerPtScale.h"
+#include "CondFormats/DataRecord/interface/L1MuTriggerPtScaleRcd.h"
+#include <L1Trigger/CSCTrackFinder/interface/CSCTrackFinderDataTypes.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -29,15 +36,15 @@
 
 
 using namespace L1TMuon;
-
+using namespace std;
 
 L1TMuonTextDumper::L1TMuonTextDumper(const PSet& p) {
   if( (_dogen = p.getUntrackedParameter<bool>("doGen",false)) ) {
     _geninput = p.getUntrackedParameter<edm::InputTag>("genSrc");
   }
-  _tpinputs = p.getParameter<std::vector<edm::InputTag> >("primitiveSrcs");
+  _tpinputs = p.getParameter<vector<edm::InputTag> >("primitiveSrcs");
   _convTrkInputs = 
-    p.getParameter<std::vector<edm::InputTag> >("converterSrcs");
+    p.getParameter<vector<edm::InputTag> >("converterSrcs");
     
   LUTparam = p.getParameter<edm::ParameterSet>("lutParam");
     
@@ -49,24 +56,24 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 				const edm::EventSetup& es) {
 			       
  		
-  std::cout<<"Start TextDumper Producer::::: event = "<<ev.id().event()<<"\n\n";
+  cout<<"Start TextDumper Producer::::: event = "<<ev.id().event()<<"\n\n";
   
   fprintf (write,"12345\n"); //<-- part of printing text file to send verilog code, not needed if George's package is included
   
   
-  std::auto_ptr<L1TMuon::InternalTrackCollection> FoundTracks (new L1TMuon::InternalTrackCollection);
+  auto_ptr<L1TMuon::InternalTrackCollection> FoundTracks (new L1TMuon::InternalTrackCollection);
   
-  std::vector<BTrack> PTracks[12];
+  vector<BTrack> PTracks[12];
  
-  std::vector<TriggerPrimitiveRef> tester;
-  //std::vector<InternalTrack> FoundTracks;
+  vector<TriggerPrimitiveRef> tester;
+  //vector<InternalTrack> FoundTracks;
   
   //////////////////////////////////////////////
   ////////// Get Generated Muons ///////////////
   //////////////////////////////////////////////
   
-  edm::Handle<std::vector<reco::GenParticle>> GenMuons;
-  std::vector<reco::GenParticle>::const_iterator GI;
+  edm::Handle<vector<reco::GenParticle>> GenMuons;
+  vector<reco::GenParticle>::const_iterator GI;
   ev.getByLabel("genParticles",GenMuons);
   bool gpir = false, endcap1 = false, endcap2 = false;
   int etaindex = -99;
@@ -78,7 +85,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     double pt = GenMuon.pt(), eta = GenMuon.eta(), phi = GenMuon.phi(), mass = GenMuon.mass();
     int charge = GenMuon.charge();
 	
-    std::cout<<"Gen Particle Info::::\nPt = "<<pt<<", phi = "<<phi<<", eta = "<<eta<<", mass = "<<mass<<" and charge = "<<charge<<"\n\n";
+    cout<<"Gen Particle Info::::\nPt = "<<pt<<", phi = "<<phi<<", eta = "<<eta<<", mass = "<<mass<<" and charge = "<<charge<<"\n\n";
   	
     if((fabs(eta) > 1.2) && (fabs(eta) <= 2.4) && (pt >= 5))
       gpir = true;
@@ -111,7 +118,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
   
   
   if(etaindex != -99)
-    std::cout<<"\neta index = "<<etaindex<<"\n";//
+    cout<<"\neta index = "<<etaindex<<"\n";//
   
   //////////////////////////////////////////////
   ///////// Get Trigger Primitives /////////////  Retrieve TriggerPrimitives from the event record
@@ -131,7 +138,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 		
 	tester.push_back(tpref);
 		
-	std::cout<<"\ntrigger prim found station:"<<tp->detId<CSCDetId>().station()<<std::endl;
+	cout<<"\ntrigger prim found station:"<<tp->detId<CSCDetId>().station()<<endl;
 		
 	if((tp->detId<CSCDetId>().station() == 4) && (fabs(GeneratorMuon.eta()) < 1.7)){
 		
@@ -151,14 +158,14 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 	  
 	if(tp->detId<CSCDetId>().triggerSector() == 1){
 		
-	  std::cout<<"there are sector 1 csc hits\n\n";
-	  std::cout<<"strip = "<<tp->getCSCData().strip<<std::endl;
+	  cout<<"there are sector 1 csc hits\n\n";
+	  cout<<"strip = "<<tp->getCSCData().strip<<endl;
 	  striph->Fill(tp->getCSCData().strip);
 	}
       }
     }  
   }
-  std::vector<ConvertedHit> CHits[12];
+  vector<ConvertedHit> CHits[12];
   MatchingOutput MO[12];
  
   for(int SectIndex=0;SectIndex<12;SectIndex++){//perform TF on all 12 sectors
@@ -170,10 +177,10 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     //////////////////////////////////////////////////////
 
 
-    std::vector<ConvertedHit> ConvHits = PrimConv(tester,SectIndex);
+    vector<ConvertedHit> ConvHits = PrimConv(tester,SectIndex);
     CHits[SectIndex] = ConvHits;
 	
-    for(std::vector<ConvertedHit>::iterator i=ConvHits.begin();i!=ConvHits.end();i++){
+    for(vector<ConvertedHit>::iterator i=ConvHits.begin();i!=ConvHits.end();i++){
 	
       if(i->TP()->detId<CSCDetId>().ring() == 4)
 	ME1gangnedtest->Fill(i->Phi());
@@ -184,7 +191,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
   
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
     ////////////////////////////////print values for input into Alex's emulator code/////////////////////////////////////////////////////
-    //for(std::vector<ConvertedHit>::iterator h = ConvHits.begin();h != ConvHits.end();h++){
+    //for(vector<ConvertedHit>::iterator h = ConvHits.begin();h != ConvHits.end();h++){
 	
     //if((h->Id()) > 9){h->SetId(h->Id() - 9);h->SetStrip(h->Strip() + 128);}	
     //fprintf (write,"0	1	1 	%d	%d\n",h->Sub(),h->Station());
@@ -203,14 +210,14 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     //////////////////////////////////////////////////////
  
  
-    std::vector<std::vector<ConvertedHit>> GroupedHits = GroupBX(ConvHits);
+    vector<vector<ConvertedHit>> GroupedHits = GroupBX(ConvHits);
  
  
     ////////////////////////////////////////////////////////  Creates a zone for each of the three groups created in the BX Grouper module.
     ////////// Creat Zones for pattern Recognition /////////  The output of this module not only contains the zones but also the 
     ////////////////////////////////////////////////////////  reference back to the TriggerPrimitives that went into making them.
 	
-    std::vector<ZonesOutput> Zout = Zones(GroupedHits);
+    vector<ZonesOutput> Zout = Zones(GroupedHits);
    
 
     ///////////////////////////////
@@ -219,7 +226,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     ///////////////////////////////  same hits. This is where the BX analysis ends; Only 1 list of found patterns is given to the next module.
   
 
-    std::vector<PatternOutput> Pout = Patterns(Zout);
+    vector<PatternOutput> Pout = Patterns(Zout);
   
     PatternOutput Test = DeleteDuplicatePatterns(Pout);
  
@@ -250,7 +257,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     /////////////////////////////////
   
   
-    std::vector<std::vector<DeltaOutput>> Dout = CalcDeltas(Mout);////
+    vector<vector<DeltaOutput>> Dout = CalcDeltas(Mout);////
  
 
     /////////////////////////////////
@@ -259,7 +266,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     /////////////////////////////////  
   
   
-    std::vector<BTrack> Bout = BestTracks(Dout);
+    vector<BTrack> Bout = BestTracks(Dout);
     PTracks[SectIndex] = Bout;
    
   
@@ -290,7 +297,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 		
       int sh_seg = 0;
 		
-      std::cout<<"\nComparing adjacent sectors\n";
+      cout<<"\nComparing adjacent sectors\n";
 
       for(int sta=0;sta<4;sta++){//the part which is done incorrectly
 		
@@ -328,7 +335,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
  
  
   BTrack FourBest[4];
-  std::vector<BTrack> PTemp[12] = PTracks;
+  vector<BTrack> PTemp[12] = PTracks;
   int windex[4] = {-1,-1,-1,-1};
  
  
@@ -374,12 +381,12 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
       tempTrack.rank = FourBest[fbest].winner.Rank();
       tempTrack.deltas = FourBest[fbest].deltas;
 		
-      for(std::vector<ConvertedHit>::iterator A = FourBest[fbest].AHits.begin();A != FourBest[fbest].AHits.end();A++){
+      for(vector<ConvertedHit>::iterator A = FourBest[fbest].AHits.begin();A != FourBest[fbest].AHits.end();A++){
 		
 	if(A->Phi() != -999){
 			
 	  tempTrack.addStub(A->TP());
-	  //std::cout<<"Q: "<<A->Quality()<<", keywire: "<<A->Wire()<<", strip: "<<A->Strip()<<std::endl;
+	  //cout<<"Q: "<<A->Quality()<<", keywire: "<<A->Wire()<<", strip: "<<A->Strip()<<endl;
 	}
 			
       }
@@ -388,6 +395,47 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     }
   }
   
+  ///////////////////////////////////////////////
+  //// Pt assignment //
+  ///////////////////////////////////////////////
+  edm::ESHandle< L1MuTriggerScales > scales ;
+  es.get< L1MuTriggerScalesRcd >().get( scales ) ;
+
+  edm::ESHandle< L1MuTriggerPtScale > ptScale ;
+  es.get< L1MuTriggerPtScaleRcd >().get( ptScale ) ;
+
+  //  edm::ParameterSet ptLUTset = p.getParameter<edm::ParameterSet>("PTLUT");
+  CSCTFPtLUT* ptLUT_ = new CSCTFPtLUT(LUTparam, scales.product(),ptScale.product());
+   
+  cout << "ptLUT_ " << ptLUT_ << endl;
+  ptadd address;
+  address.delta_phi_12 = delta_phi_12;
+  address.delta_phi_23 = delta_phi_23;
+  address.track_eta = track_eta;
+  address.track_mode = track_mode;
+  address.track_fr = track_fr;
+  address.delta_phi_sign = delta_phi_sign;
+
+  // vector<csc::L1Track>::iterator titr = tftks.begin();
+
+  // for(; titr != tftks.end(); titr++){
+  //   ptadd thePtAddress(titr->ptLUTAddress());
+  //   ptdat thePtData = ptLUT_->Pt(thePtAddress);
+
+  //   if (thePtAddress.track_fr){
+  //     titr->setRank(thePtData.front_rank);
+  //     titr->setChargeValidPacked(thePtData.charge_valid_front);
+  //   }
+  //   else {
+  //     titr->setRank(thePtData.rear_rank);
+  //     titr->setChargeValidPacked(thePtData.charge_valid_rear);
+  //   }
+  //   if ( ((titr->ptLUTAddress()>>16)&0xf)==15 ){
+  //     int unmodBx = titr->bx();
+  //     titr->setBx(unmodBx+2);
+  //   }
+  // }
+
   ///////////////////////////////////////////////
   //// Below here is working additions to make //
   //// efficiency plots and can be neglected ////
@@ -416,7 +464,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     if(tester.size() >= 2){
 	
       int contribution = 0;
-      for(std::vector<TriggerPrimitiveRef>::iterator C1 = tester.begin();C1 != tester.end();C1++){
+      for(vector<TriggerPrimitiveRef>::iterator C1 = tester.begin();C1 != tester.end();C1++){
 			
 	int station = (*C1)->detId<CSCDetId>().station();
 	switch(station){
@@ -425,7 +473,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 	case(2):contribution |= 4;break;
 	case(3):contribution |= 2;break;
 	case(4):contribution |= 1;break;
-	default:std::cout<<"Station is out of range\n";
+	default:cout<<"Station is out of range\n";
 			
 	}
       }
@@ -439,17 +487,17 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 	detectorinefficiency = true;
 		
       if(contribution == 6){//had stations 2&3 but no track
-	std::cout<<"Stations 2 & 3\nevent = "<<ev.id().event()<<"\nSectIndex = "<<
+	cout<<"Stations 2 & 3\nevent = "<<ev.id().event()<<"\nSectIndex = "<<
 	  ((tester[0]->detId<CSCDetId>().endcap()) - 1)*6 + (tester[0]->detId<CSCDetId>().triggerSector()) - 1<<"\n\n";
       }
 		
       if(contribution == 11){//had stations 1&3&4 but no track
-	std::cout<<"Stations 1 & 3 & 4\nevent = "<<ev.id().event()<<"\nSectIndex = "<<
+	cout<<"Stations 1 & 3 & 4\nevent = "<<ev.id().event()<<"\nSectIndex = "<<
 	  ((tester[0]->detId<CSCDetId>().endcap()) - 1)*6 + (tester[0]->detId<CSCDetId>().triggerSector()) - 1<<"\n\n";
       }
 		
       if(contribution == 10){//had stations 1&3 but no track
-	std::cout<<"Stations 1 & 3\nevent = "<<ev.id().event()<<"\nSectIndex = "<<
+	cout<<"Stations 1 & 3\nevent = "<<ev.id().event()<<"\nSectIndex = "<<
 	  ((tester[0]->detId<CSCDetId>().endcap()) - 1)*6 + (tester[0]->detId<CSCDetId>().triggerSector()) - 1<<"\n\n";
       }
 		
@@ -534,12 +582,12 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 				
 					
 	      int s1 = tester[i1]->detId<CSCDetId>().station(), s2 = tester[i2]->detId<CSCDetId>().station();
-	      std::vector<int> z1 = CHits[sindex0][i1].ZoneContribution(), z2 = CHits[sindex0][i2].ZoneContribution();
+	      vector<int> z1 = CHits[sindex0][i1].ZoneContribution(), z2 = CHits[sindex0][i2].ZoneContribution();
 					
 	      if(s1 != s2){
 					
-		for(std::vector<int>::iterator a1=z1.begin();a1 != z1.end();a1++){
-		  for(std::vector<int>::iterator a2=z2.begin();a2 != z2.end();a2++){
+		for(vector<int>::iterator a1=z1.begin();a1 != z1.end();a1++){
+		  for(vector<int>::iterator a2=z2.begin();a2 != z2.end();a2++){
 							
 		    if((*a1) == (*a2))
 		      samezone = true;
@@ -579,7 +627,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 		else
 		  st12errors->Fill(6);
 								
-		std::cout<<"\n!thwindow\n";
+		cout<<"\n!thwindow\n";
 	      }
 	      //else if(thwindow){
 						
@@ -594,10 +642,10 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 		
       if((contribution > 4) && (contribution != 8)){
 		
-	std::cout<<"\nMISSED\n";
+	cout<<"\nMISSED\n";
 			
 	if(contribution == 12)
-	  std::cout<<"ONLY STATIONS 1 AND 2 : (\nevent = "<<ev.id().event()<<"\n\n";
+	  cout<<"ONLY STATIONS 1 AND 2 : (\nevent = "<<ev.id().event()<<"\n\n";
 		
 	MissVsEta->Fill(GeneratorMuon.eta());
 	MissVsPhi->Fill(GeneratorMuon.phi());
@@ -614,56 +662,56 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 
   if(gpir && (FoundTracks->size() == 1)){
   
-    std::cout<<"\nFOUND ONE MUON-------------Sector "<<windex[0]/3<<"\n";
+    cout<<"\nFOUND ONE MUON-------------Sector "<<windex[0]/3<<"\n";
 	
     int ecap = 0;
 	
-    std::vector<ConvertedHit> ahits = FourBest[0].AHits;
+    vector<ConvertedHit> ahits = FourBest[0].AHits;
 	
-    std::cout<<"ahits.size() = "<<ahits.size()<<std::endl;
-    std::cout<<"ahits[0].Phi() "<< ahits[0].Phi() << std::endl;
-    std::cout<<"ahits[1].Phi() "<< ahits[1].Phi() << std::endl;
-    std::cout<<"ahits[2].Phi() "<< ahits[2].Phi() << std::endl;
-    std::cout<<"ahits[3].Phi() "<< ahits[3].Phi() << std::endl;
+    cout<<"ahits.size() = "<<ahits.size()<<endl;
+    cout<<"ahits[0].Phi() "<< ahits[0].Phi() << endl;
+    cout<<"ahits[1].Phi() "<< ahits[1].Phi() << endl;
+    cout<<"ahits[2].Phi() "<< ahits[2].Phi() << endl;
+    cout<<"ahits[3].Phi() "<< ahits[3].Phi() << endl;
 	
     
     if(FourBest[0].AHits[0].Phi() != -999){
       if(FourBest[0].AHits[0].TP()->detId<CSCDetId>().endcap()){
 	ecap = FourBest[0].AHits[0].TP()->detId<CSCDetId>().endcap();
-	std::cout<<"\n1\n";}
+	cout<<"\n1\n";}
     }
     else if(FourBest[0].AHits[1].Phi() != -999){
       if(FourBest[0].AHits[1].TP()->detId<CSCDetId>().endcap()){
 	ecap = FourBest[0].AHits[1].TP()->detId<CSCDetId>().endcap();
-	std::cout<<"\n2\n";}
+	cout<<"\n2\n";}
     }
     else if(FourBest[0].AHits[2].Phi() != -999){
       if(FourBest[0].AHits[2].TP()->detId<CSCDetId>().endcap()){
 	ecap = FourBest[0].AHits[2].TP()->detId<CSCDetId>().endcap();
-	std::cout<<"\n3\n";}
+	cout<<"\n3\n";}
     }
     else if(FourBest[0].AHits[3].Phi() != -999){
       if(FourBest[0].AHits[3].TP()->detId<CSCDetId>().endcap()){
 	ecap = FourBest[0].AHits[3].TP()->detId<CSCDetId>().endcap();
-	std::cout<<"\n4\n";}
+	cout<<"\n4\n";}
     }
 		
-    std::cout<<"ecap "<< ecap << std::endl;
+    cout<<"ecap "<< ecap << endl;
 
-    std::cout<<"\n5\n";
+    cout<<"\n5\n";
 	
     int cont = 0, numTP = 0;
-    for(std::vector<TriggerPrimitiveRef>::iterator C1 = tester.begin();C1 != tester.end();C1++){
+    for(vector<TriggerPrimitiveRef>::iterator C1 = tester.begin();C1 != tester.end();C1++){
 			
       int stat = 0;
-      std::cout<<"\n2\n";
+      cout<<"\n2\n";
 		
       if((*C1)->detId<CSCDetId>().endcap() != ecap){
 	stat = (*C1)->detId<CSCDetId>().station();
 	numTP++;
       }
 		
-      std::cout<<"\n3\n";
+      cout<<"\n3\n";
 		
       switch(stat){
 			
@@ -672,7 +720,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
       case(2):cont |= 4;break;
       case(3):cont |= 2;break;
       case(4):cont |= 1;break;
-      default:std::cout<<"Station is out of range\n";
+      default:cout<<"Station is out of range\n";
 			
       }
     }
@@ -703,29 +751,29 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     secdiff->Fill(fabs(sectors[0] - sectors[1]));
 	
     if(fabs(sectors[0] - sectors[1]) == 0)
-      std::cout<<"\nTWO IN SAME SECTOR\n";
+      cout<<"\nTWO IN SAME SECTOR\n";
 	
-    std::cout<<"\nTWO MUONS FOUND------- Sectors: "<<sectors[0]<<" and "<<sectors[1]<<"\n";
+    cout<<"\nTWO MUONS FOUND------- Sectors: "<<sectors[0]<<" and "<<sectors[1]<<"\n";
 	
   
   }
   
   if(gpir && (FoundTracks->size() == 3)){
   
-    std::cout<<"\nFOUND THREE MUONS---------- Sectors: "<<windex[0]/3<<", "<<windex[1]/3<<" and "<<windex[2]/3<<"\n";
+    cout<<"\nFOUND THREE MUONS---------- Sectors: "<<windex[0]/3<<", "<<windex[1]/3<<" and "<<windex[2]/3<<"\n";
   }
 
   
-  //  std::cout<<"Begin Put function\n\n";
+  //  cout<<"Begin Put function\n\n";
   ev.put( FoundTracks, "DataITC");
-  std::cout<<"End TextDump Prducer:::::::::::::::::::::::::::\n:::::::::::::::::::::::::::::::::::::::::::::::::\n\n";
+  cout<<"End TextDump Prducer:::::::::::::::::::::::::::\n:::::::::::::::::::::::::::::::::::::::::::::::::\n\n";
 
 }//analyzer
 
 void L1TMuonTextDumper::beginJob()
 {
 
-  //std::cout<<"Begin TextDump Prducer:::::::::::::::::::::::::::\n:::::::::::::::::::::::::::::::::::::::::::::::::\n\n";
+  //cout<<"Begin TextDump Prducer:::::::::::::::::::::::::::\n:::::::::::::::::::::::::::::::::::::::::::::::::\n\n";
   ///////////////////////////
   ////// Histogram //////////
   ////// Declaration ////////
@@ -784,15 +832,15 @@ void L1TMuonTextDumper::endJob()
   fclose (tptest);
   TFileDirectory dir = histofile->mkdir("1");
 	
-  std::cout<<"\n\n\nfpire = ";
+  cout<<"\n\n\nfpire = ";
   for(int i=0;i<24;i++)
-    std::cout<<fpire[i]<<"   ";
+    cout<<fpire[i]<<"   ";
 	
-  std::cout<<"\ngpire = ";
+  cout<<"\ngpire = ";
   for(int ii=0;ii<24;ii++)
-    std::cout<<gpire[ii]<<"   ";
+    cout<<gpire[ii]<<"   ";
 		
-  std::cout<<"\nTHE END"<<std::endl;
+  cout<<"\nTHE END"<<endl;
 	
 }
 #include "FWCore/Framework/interface/MakerMacros.h"
