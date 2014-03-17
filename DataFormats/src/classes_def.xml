@@ -9,8 +9,8 @@
   <class name="L1TMuon::TriggerPrimitive::DTData" ClassVersion="10">
    <version ClassVersion="10" checksum="2509427716"/>
   </class>
-  <class name="L1TMuon::TriggerPrimitive::GEMData" ClassVersion="10">
-   <version ClassVersion="10" checksum="1173811648"/>
+  <class name="L1TMuon::TriggerPrimitive::GEMData" ClassVersion="11">
+   <version ClassVersion="11" checksum="31030460"/>
   </class>
   <class name="L1TMuon::TriggerPrimitive::HCALData" ClassVersion="10">
    <version ClassVersion="10" checksum="1908837509"/>

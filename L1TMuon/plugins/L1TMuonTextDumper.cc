@@ -21,6 +21,8 @@
 #include "CondFormats/DataRecord/interface/L1MuTriggerPtScaleRcd.h"
 #include <L1Trigger/CSCTrackFinder/interface/CSCTrackFinderDataTypes.h>
 
+#include "DataFormats/MuonDetId/interface/GEMDetId.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -133,11 +135,12 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
     auto tpend = tps->cend();
 
     for( ; tp != tpend; ++tp ) {
+      std::cout << "jason: tp->subsystem()" << tp->subsystem() << std::endl;
+      TriggerPrimitiveRef tpref(tps,tp - tps -> cbegin());
+		
+      tester.push_back(tpref);
+		
       if(tp->subsystem() == 1){
-	TriggerPrimitiveRef tpref(tps,tp - tps -> cbegin());
-		
-	tester.push_back(tpref);
-		
 	cout<<"\ntrigger prim found station:"<<tp->detId<CSCDetId>().station()<<endl;
 		
 	if((tp->detId<CSCDetId>().station() == 4) && (fabs(GeneratorMuon.eta()) < 1.7)){
@@ -163,7 +166,11 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 	  striph->Fill(tp->getCSCData().strip);
 	}
       }
-    }  
+      if(tp->subsystem() == 3){
+	if((tp->detId<GEMDetId>().station() == 1))
+	  h_GE11->Fill(1);			
+      }
+    }
   }
   vector<ConvertedHit> CHits[12];
   MatchingOutput MO[12];
@@ -230,6 +237,7 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
   
     PatternOutput Test = DeleteDuplicatePatterns(Pout);
  
+    cout << "test PatternOutput " << endl;
     PrintQuality(Test.detected);
  
 
@@ -408,34 +416,45 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
   CSCTFPtLUT* ptLUT_ = new CSCTFPtLUT(LUTparam, scales.product(),ptScale.product());
    
   cout << "ptLUT_ " << ptLUT_ << endl;
-  ptadd address;
-  address.delta_phi_12 = delta_phi_12;
-  address.delta_phi_23 = delta_phi_23;
-  address.track_eta = track_eta;
-  address.track_mode = track_mode;
-  address.track_fr = track_fr;
-  address.delta_phi_sign = delta_phi_sign;
+  cout << "FoundTracks->size() " << FoundTracks->size() << endl;
+  //  for (auto foundTrack : FoundTracks){
 
-  // vector<csc::L1Track>::iterator titr = tftks.begin();
+  auto stub = FoundTracks->begin();
+  auto stend = FoundTracks->end();
+  for( ; stub != stend; ++stub ) {
 
-  // for(; titr != tftks.end(); titr++){
-  //   ptadd thePtAddress(titr->ptLUTAddress());
-  //   ptdat thePtData = ptLUT_->Pt(thePtAddress);
+    // cout << "foundTrack->phiValue() " << stub->phiValue() << endl;
+    // cout << "foundTrack->etaValue() " << stub->etaValue() << endl;
+    // cout << "foundTrack->ptValue() " << stub->ptValue() << endl;
 
-  //   if (thePtAddress.track_fr){
-  //     titr->setRank(thePtData.front_rank);
-  //     titr->setChargeValidPacked(thePtData.charge_valid_front);
-  //   }
-  //   else {
-  //     titr->setRank(thePtData.rear_rank);
-  //     titr->setChargeValidPacked(thePtData.charge_valid_rear);
-  //   }
-  //   if ( ((titr->ptLUTAddress()>>16)&0xf)==15 ){
-  //     int unmodBx = titr->bx();
-  //     titr->setBx(unmodBx+2);
-  //   }
-  // }
+    // ptadd address;
+    // address.delta_phi_12 = delta_phi_12;
+    // address.delta_phi_23 = delta_phi_23;
+    // address.track_eta = track_eta;
+    // address.track_mode = track_mode;
+    // address.track_fr = track_fr;
+    // address.delta_phi_sign = delta_phi_sign;
+    
+    // vector<csc::L1Track>::iterator titr = tftks.begin();
 
+    // for(; titr != tftks.end(); titr++){
+    //   ptadd thePtAddress(titr->ptLUTAddress());
+    //   ptdat thePtData = ptLUT_->Pt(thePtAddress);
+
+    //   if (thePtAddress.track_fr){
+    //     titr->setRank(thePtData.front_rank);
+    //     titr->setChargeValidPacked(thePtData.charge_valid_front);
+    //   }
+    //   else {
+    //     titr->setRank(thePtData.rear_rank);
+    //     titr->setChargeValidPacked(thePtData.charge_valid_rear);
+    //   }
+    //   if ( ((titr->ptLUTAddress()>>16)&0xf)==15 ){
+    //     int unmodBx = titr->bx();
+    //     titr->setBx(unmodBx+2);
+    //   }
+    // }
+  }
   ///////////////////////////////////////////////
   //// Below here is working additions to make //
   //// efficiency plots and can be neglected ////
@@ -465,16 +484,15 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 	
       int contribution = 0;
       for(vector<TriggerPrimitiveRef>::iterator C1 = tester.begin();C1 != tester.end();C1++){
-			
-	int station = (*C1)->detId<CSCDetId>().station();
-	switch(station){
-			
-	case(1):contribution |= 8;break;
-	case(2):contribution |= 4;break;
-	case(3):contribution |= 2;break;
-	case(4):contribution |= 1;break;
-	default:cout<<"Station is out of range\n";
-			
+	if ((*C1)->subsystem() == TriggerPrimitive::kCSC){
+	  int station = (*C1)->detId<CSCDetId>().station();
+	  switch(station){
+	  case(1):contribution |= 8;break;
+	  case(2):contribution |= 4;break;
+	  case(3):contribution |= 2;break;
+	  case(4):contribution |= 1;break;
+	  default:cout<<"Station is out of range\n";
+	  }
 	}
       }
 		
@@ -705,12 +723,13 @@ void L1TMuonTextDumper::produce(edm::Event& ev,
 			
       int stat = 0;
       cout<<"\n2\n";
-		
-      if((*C1)->detId<CSCDetId>().endcap() != ecap){
-	stat = (*C1)->detId<CSCDetId>().station();
-	numTP++;
+      
+      if ((*C1)->subsystem() == TriggerPrimitive::kCSC){
+	if((*C1)->detId<CSCDetId>().endcap() != ecap){
+	  stat = (*C1)->detId<CSCDetId>().station();
+	  numTP++;
+	}
       }
-		
       cout<<"\n3\n";
 		
       switch(stat){
@@ -793,6 +812,7 @@ void L1TMuonTextDumper::beginJob()
   dphi = fopen("dphi1.txt","w");
   tptest = fopen("dth.txt","w");
 	
+  h_GE11 = dir1.make<TH1F>("GE11","GE11",10,0,10);h_GE11->SetFillColor(2);
   striph = dir1.make<TH1F>("striph","TP strip distribution",250,0,250);striph->SetFillColor(2);
   eff = dir.make<TH1F>("eff","If GenParticle how many EmulatorMuons (Endcap 1)",5,0,5);eff->SetFillColor(4);
   eff2 = dir.make<TH1F>("eff2","If GenParticle how many EmulatorMuons (Endcap 2)",5,0,5);eff2->SetFillColor(4);

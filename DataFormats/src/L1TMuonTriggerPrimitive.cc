@@ -246,6 +246,8 @@ const int TriggerPrimitive::getStrip() const {
     return _csc.strip;
   case kRPC:
     return _rpc.strip;
+  case kGEM:
+    return _gem.strip;
   default:
     throw cms::Exception("Invalid Subsytem") 
       << "The specified subsystem for this track stub is out of range"
@@ -261,6 +263,8 @@ const int TriggerPrimitive::getWire() const {
   case kCSC:
     return _csc.keywire;
   case kRPC:
+    return -1;
+  case kGEM:
     return -1;
   default:
     throw cms::Exception("Invalid Subsytem") 
@@ -278,6 +282,8 @@ const int TriggerPrimitive::getPattern() const {
     return _csc.pattern;
   case kRPC:
     return -1;
+  case kGEM:
+    return -1;
   default:
     throw cms::Exception("Invalid Subsytem") 
       << "The specified subsystem for this track stub is out of range"
@@ -292,6 +298,8 @@ const int TriggerPrimitive::Id() const {
   case kCSC:
     return _csc.cscID;
   case kRPC:
+    return -1;
+  case kGEM:
     return -1;
   default:
     throw cms::Exception("Invalid Subsytem") 

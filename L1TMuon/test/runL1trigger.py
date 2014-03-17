@@ -5,7 +5,9 @@
 # with command line options: SingleMuPt100_cfi --conditions auto:upgrade2019 -n 100 --eventcontent FEVTDEBUGHLT -s L1 --datatier L1 --customise SLHCUpgradeSimulations/Configuration/combinedCustoms.cust_2019WithGem --geometry Extended2019 --magField 38T_PostLS1 --filein file:out_digi.root --fileout file:out_L1_cust_2019WithGem.root
 
 useUpdatedTF = True
-withGEM = False
+withGEM = True
+clctNplanesHitPattern3 = False
+buildLCTfromALCTandGEMinOverlap = False
 
 import FWCore.ParameterSet.Config as cms
 
@@ -23,9 +25,9 @@ process.load('Configuration.StandardSequences.SimL1Emulator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-fileInputName = "file:out_L1_cust_2019.root"
+fileOutputName = "out_L1_cust_2019"
 if withGEM:
-    fileInputName = "file:out_L1_cust_2019WithGem.root"
+    fileOutputName = fileOutputName+"WithGem"
 
 if useUpdatedTF:
     process.load('L1TriggerDPGUpgrade.L1TMuon.L1TMuonTriggerPrimitiveProducer_cfi')
@@ -33,10 +35,10 @@ if useUpdatedTF:
     process.load('L1TriggerDPGUpgrade.L1TMuon.L1DTTFTrackConverter_cfi')
     process.load('L1TriggerDPGUpgrade.L1TMuon.L1RPCTFTrackConverter_cfi')
     process.load('L1TriggerDPGUpgrade.L1TMuon.L1TMuonSimpleDeltaEtaHitMatcher_cfi')
-    fileInputName = "file:out_L1_cust_2019NewTF.root"
-    if withGEM:
-        fileInputName = "file:out_L1_cust_2019WithGemNewTF.root"
+    fileOutputName = fileOutputName+"NewTF"
 
+histofileName= "histo_"+fileOutputName+".root"
+fileOutputName = "file:"+fileOutputName+".root"
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(10000)
 )
@@ -83,12 +85,14 @@ process.configurationMetadata = cms.untracked.PSet(
 )
 
 # Output definition
+outCommands = cms.untracked.vstring('keep *')
 
 process.FEVTDEBUGHLToutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
-    outputCommands = process.FEVTDEBUGHLTEventContent.outputCommands,
-    fileName = cms.untracked.string(fileInputName),
+#    outputCommands = process.FEVTDEBUGHLTEventContent.outputCommands,
+    outputCommands = outCommands,
+    fileName = cms.untracked.string(fileOutputName),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('L1')
@@ -123,20 +127,22 @@ if useUpdatedTF:
         primitiveSrcs = cms.VInputTag(
             cms.InputTag('L1TMuonTriggerPrimitives','CSC'),
             cms.InputTag('L1TMuonTriggerPrimitives','DT'),
-            cms.InputTag('L1TMuonTriggerPrimitives','RPC')
+            cms.InputTag('L1TMuonTriggerPrimitives','RPC'),
+            cms.InputTag('L1TMuonTriggerPrimitives','GEM')
             ),
-            converterSrcs = cms.VInputTag(
-                cms.InputTag('L1CSCTFTrackConverter'),
-                cms.InputTag('L1DTTFTrackConverter'),
-                cms.InputTag('L1RPCbTFTrackConverter'),
-                cms.InputTag('L1RPCfTFTrackConverter'),
-                cms.InputTag('L1TMuonSimpleDeltaEtaHitMatcher')
-                ),
-                lutParam = cms.PSet(
-                    isBeamStartConf = cms.untracked.bool(True),
-                    ReadPtLUT = cms.bool(False),
-                    PtMethod = cms.untracked.uint32(32)
-                    )
+        converterSrcs = cms.VInputTag(
+            cms.InputTag('L1CSCTFTrackConverter'),
+            cms.InputTag('L1DTTFTrackConverter'),
+            cms.InputTag('L1RPCbTFTrackConverter'),
+            cms.InputTag('L1RPCfTFTrackConverter'),
+            cms.InputTag('L1TMuonSimpleDeltaEtaHitMatcher')
+            ),
+        lutParam = process.simCsctfTrackDigis.SectorProcessor.PTLUT
+                #cms.PSet(
+                #    isBeamStartConf = cms.untracked.bool(True),
+                #    ReadPtLUT = cms.bool(False),
+                #    PtMethod = csctfTrackDigisUngangedME1a.SectorProcessor.PTLUT.PtMethod #cms.untracked.uint32(32)
+                #    )
         )
     
     process.content = cms.EDAnalyzer("EventContentAnalyzer")
@@ -165,10 +171,9 @@ if useUpdatedTF:
         'DiagMaker',
         testVar = cms.untracked.bool(False)
         )
-    fileOutName = "test.root"
     process.TFileService = cms.Service("TFileService",
                                        fileName = cms.string(
-                                           fileOutName
+                                           histofileName
                                            ))
     
     #process.L1TMuonSequence = cms.Sequence(process.L1TMuonVerilogBasedMatcher * process.DiagMaker)
@@ -184,8 +189,18 @@ if useUpdatedTF:
 if withGEM:
     from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2019WithGem 
     process = cust_2019WithGem(process)
+
+    if clctNplanesHitPattern3:
+        process.simCscTriggerPrimitiveDigis.clctSLHC.clctNplanesHitPattern = cms.uint32(3)
+    if buildLCTfromALCTandGEMinOverlap:
+        process.simCscTriggerPrimitiveDigis.tmbSLHC.buildLCTfromALCTandGEMinOverlap = cms.untracked.bool(True)
+
 else :
     from SLHCUpgradeSimulations.Configuration.combinedCustoms import cust_2019
     process = cust_2019(process)
+
+print process.simCsctfTrackDigis.SectorProcessor.PTLUT
+if useUpdatedTF:
+    process.L1TMuonText.lutParam = process.simCsctfTrackDigis.SectorProcessor.PTLUT
 
 # End of customisation functions

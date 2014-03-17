@@ -3,6 +3,7 @@
 # Revision: 1.20 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
 # with command line options: SingleMuPt100_cfi --conditions auto:upgrade2019 -n 100 --eventcontent FEVTDEBUGHLT -s GEN,SIM,DIGI --datatier GEN-SIM-DIGI --customise SLHCUpgradeSimulations/Configuration/combinedCustoms.cust_2019WithGem --geometry Extended2019 --magField 38T_PostLS1 --pileup AVE_100_BX_25ns --no_exec --fileout file:out_digi.root
+
 PID = 13
 pu = 0.0
 

@@ -9,6 +9,7 @@
 
 #include "L1TriggerDPGUpgrade/L1TMuon/src/core_gen_summer_2013/sp_tf.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
+#include "DataFormats/MuonDetId/interface/GEMDetId.h"
 
 #include "math.h"
 #include "Riostream.h"

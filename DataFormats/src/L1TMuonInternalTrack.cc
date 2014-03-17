@@ -87,7 +87,7 @@ void InternalTrack::addStub(const TriggerPrimitiveRef& stub) {
     throw cms::Exception("Invalid Subsytem") 
       << "The specified subsystem for this track stub is out of range"
       << std::endl;
-  }  
+  }
 
   const unsigned shift = 4*offset + station - 1;
   const unsigned bit = 1 << shift;

@@ -35,6 +35,7 @@
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
+#include "DataFormats/MuonDetId/interface/GEMDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
 using namespace L1TMuon;
@@ -127,6 +128,7 @@ convertStubsToName(const TriggerPrimitive& tp1,
   CSCDetId cscid;
   RPCDetId rpcid;
   DTChamberId dtid;
+  GEMDetId gemid;
   HcalTrigTowerDetId hcalid;
 
   type1 = tp1.subsystem();
@@ -147,6 +149,11 @@ convertStubsToName(const TriggerPrimitive& tp1,
     rpcid = tp1.detId<RPCDetId>();
     name1 = (rpcid.region() == 0 ? std::string("RPCb") : std::string("RPCf"));
     station1 = rpcid.station();
+    break;
+  case TriggerPrimitive::kGEM:
+    name1 = std::string("GEM");
+    gemid = tp1.detId<GEMDetId>();
+    station1 = gemid.station();
     break;
   case TriggerPrimitive::kHCAL:
     name1 = std::string("HCAL");
@@ -172,6 +179,11 @@ convertStubsToName(const TriggerPrimitive& tp1,
     rpcid = tp2.detId<RPCDetId>();
     name2 = (rpcid.region() == 0 ? std::string("RPCb") : std::string("RPCf"));
     station2 = rpcid.station();
+    break;
+  case TriggerPrimitive::kGEM:
+    name2 = std::string("GEM");
+    gemid = tp2.detId<GEMDetId>();
+    station2 = gemid.station();
     break;
   case TriggerPrimitive::kHCAL:
     name2 = std::string("HCAL");
@@ -268,7 +280,7 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
   auto tpend = list.cend();
   
   switch( subsystem ) {
-  case 0: // DTs
+  case TriggerPrimitive::kDT: // DTs
     for( ; tp != tpend; ++tp ) {
       qualtemp = 0;
       if( (*tp)->getDTData().qualityCode != -1 ) {
@@ -283,7 +295,7 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
       }
     }
       break;
-  case 2: // CSCs
+  case TriggerPrimitive::kCSC: // CSCs
     for( ; tp != tpend; ++tp ) {
       qualtemp = (*tp)->getCSCData().quality;      
       if ( qualtemp > bestquality ) {
@@ -292,8 +304,8 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
       }
     }
     break;
-  case 1:
-  case 3: // RPCb/f
+    //  case TriggerPrimitive::kRPCf:
+  case TriggerPrimitive::kRPC: // RPCb/f
     phiavg = 0;
     lsize = list.size();
     for( ; tp != tpend; ++tp ) {
@@ -309,7 +321,16 @@ getBestTriggerPrimitive(const TriggerPrimitiveList& list,
       }
     }
     break;
-  case 4: // HCAL
+  case TriggerPrimitive::kGEM: // GEMs
+    for( ; tp != tpend; ++tp ) {
+      qualtemp = (*tp)->getGEMData().quality;      
+      if ( qualtemp > bestquality ) {
+	bestquality = qualtemp;
+	result = *tp;
+      }
+    }
+    break;
+  case TriggerPrimitive::kHCAL: // HCAL
     for( ; tp != tpend; ++tp ) {
       qualtemp = (*tp)->getHCALData().size;
       if ( qualtemp > bestquality ) {

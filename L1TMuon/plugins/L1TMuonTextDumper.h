@@ -54,12 +54,12 @@ typedef edm::ParameterSet PSet;
 //class L1TMuonTextDumper : public edm::EDAnalyzer {
 
 class L1TMuonTextDumper : public edm::EDProducer {
-public:
+ public:
   L1TMuonTextDumper(const PSet&);
   ~L1TMuonTextDumper() {}
 	
- //void analyze(const edm::Event&, const edm::EventSetup&); 
- void produce(edm::Event&, const edm::EventSetup&); 
+  //void analyze(const edm::Event&, const edm::EventSetup&); 
+  void produce(edm::Event&, const edm::EventSetup&); 
   void beginJob();
   void endJob();
   
@@ -69,13 +69,13 @@ public:
   //// For Emulator with timing /////////
   /////  we need all of these ///////////
   ///////////////////////////////////////
- // MatchingOutput Mout;
- // ZonesOutput Zout;
- // ExtenderOutput Eout;
- // PatternOutput Pout;
- // SortingOutput Sout;
- // std::vector<ConvertedHit> ConvHits;
- // std::vector<std::vector<DeltaOutput>> Dout;
+  // MatchingOutput Mout;
+  // ZonesOutput Zout;
+  // ExtenderOutput Eout;
+  // PatternOutput Pout;
+  // SortingOutput Sout;
+  // std::vector<ConvertedHit> ConvHits;
+  // std::vector<std::vector<DeltaOutput>> Dout;
   ///////////////////////////////////////
   ///////////////////////////////////////
   ///////////////////////////////////////
@@ -84,22 +84,22 @@ public:
   edm::ParameterSet LUTparam;
   CSCSectorReceiverLUT* srLUTs_[5][2];
   const float ptscale[33] = { 
-  	-1.,   0.0,   1.5,   2.0,   2.5,   3.0,   3.5,   4.0,
+    -1.,   0.0,   1.5,   2.0,   2.5,   3.0,   3.5,   4.0,
     4.5,   5.0,   6.0,   7.0,   8.0,  10.0,  12.0,  14.0,  
     16.0,  18.0,  20.0,  25.0,  30.0,  35.0,  40.0,  45.0, 
     50.0,  60.0,  70.0,  80.0,  90.0, 100.0, 120.0, 140.0, 1.E6 };
     
-    int gpire[24]; 
-    int fpire[24];
+  int gpire[24]; 
+  int fpire[24];
     
    
-   TH1F* striph, *eff, *eff2, *trigprimsize, *trigprimsize2, *st_cont, *st_cont2, *sector1, *sector2, *secdiff;
-   TH1F* MissVsEta, *MissVsPhi, *MissVsPt, *ME42test1, *ME42test2, *ME1gangnedtest, *ME11gangnedtest;
+  TH1F* h_GE11, *striph, *eff, *eff2, *trigprimsize, *trigprimsize2, *st_cont, *st_cont2, *sector1, *sector2, *secdiff;
+  TH1F* MissVsEta, *MissVsPhi, *MissVsPt, *ME42test1, *ME42test2, *ME1gangnedtest, *ME11gangnedtest;
    
-   TH1F* st12errors, *detectorineff;
+  TH1F* st12errors, *detectorineff;
   
 
-private:
+ private:
   bool _dogen;
   edm::InputTag _geninput;
   std::vector<edm::InputTag> _tpinputs, _convTrkInputs;
