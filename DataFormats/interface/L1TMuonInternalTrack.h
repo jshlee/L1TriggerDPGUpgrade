@@ -22,7 +22,6 @@
 #include "L1TriggerDPGUpgrade/DataFormats/interface/L1TMuonTriggerPrimitive.h"
 #include "DataFormats/L1GlobalMuonTrigger/interface/L1MuRegionalCand.h"
 #include "L1TriggerDPGUpgrade/DataFormats/interface/L1TMuonRegionalTracksFwd.h"
-#include "L1TriggerDPGUpgrade/DataFormats/interface/L1TMuonInternalTrackFwd.h"
 #include "DataFormats/Common/interface/RefToBase.h"
 
 class L1MuDTTrackCand;
@@ -33,22 +32,17 @@ namespace csc {
 namespace L1TMuon{
   class InternalTrack : public L1MuRegionalCand {   
   public:
-    enum subsystem_offset{ kDT, kRPCb, kCSC, kRPCf, kGEM, kHCAL, kNSubsystems };
+    enum subsystem_offset{ kDT, kRPCb, kCSC, kRPCf };
     InternalTrack():_endcap(0),_wheel(0),_sector(0),_type(5),_mode(0) {}
     ~InternalTrack() {}
     
     InternalTrack(const L1MuDTTrackCand&);
     InternalTrack(const csc::L1Track&);
     InternalTrack(const L1MuRegionalCand&,
-		  const RPCL1LinkRef&); // for RPCs    
-    InternalTrack(const InternalTrackRef&);
-
+		  const RPCL1LinkRef&); // for RPCs
+    
     void setType(unsigned type) { _type = type; }
     unsigned type_idx() const;
-
-    int endcap() const { return _endcap; }
-    int wheel()  const { return _wheel; }
-    int sector() const { return _sector; }
 
     // return the persistent pointer to the parent of this internal track
     // may be null if this has no parent
@@ -68,8 +62,6 @@ namespace L1TMuon{
     unsigned long cscMode()  const { return (_mode & 0xf<<4*kCSC)>>4*kCSC; }
     unsigned long rpcbMode() const { return (_mode & 0xf<<4*kRPCb)>>4*kRPCb; }
     unsigned long rpcfMode() const { return (_mode & 0xf<<4*kRPCf)>>4*kRPCf; }
-    unsigned long gemMode()  const { return (_mode & 0xf<<4*kGEM)>>4*kGEM; }
-    unsigned long hcalMode() const { return (_mode & 0xf<<4*kHCAL)>>4*kHCAL; }
 
     void print(std::ostream&) const;
     
@@ -80,9 +72,10 @@ namespace L1TMuon{
         int theta;
 	int rank;
 	std::vector< std::vector<int> > deltas;
-	// } ;
+   // } ;
     ////////////////////////
-	
+    
+
   private:
     TriggerPrimitiveStationMap _associatedStubs;
     int _endcap, _wheel, _sector;

@@ -6,15 +6,12 @@
 #include "DataFormats/MuonDetId/interface/RPCDetId.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "DataFormats/MuonDetId/interface/DTChamberId.h"
-#include "DataFormats/MuonDetId/interface/GEMDetId.h"
-#include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
 using namespace L1TMuon;
 
 InternalTrack::InternalTrack(const L1MuDTTrackCand& dttrack):
   L1MuRegionalCand(dttrack) {
   _mode = 0;
-  _type = dttrack.type_idx();
   _wheel = dttrack.whNum();
   _endcap = (_wheel < 0) ? -1 : 1;
   _sector = dttrack.scNum()/2 + 1; // 0-11 -> 1 - 6  
@@ -23,7 +20,6 @@ InternalTrack::InternalTrack(const L1MuDTTrackCand& dttrack):
 InternalTrack::InternalTrack(const csc::L1Track& csctrack):
   L1MuRegionalCand(csctrack) {
   _mode = 0;
-  _type = csctrack.type_idx();
   _endcap = (csctrack.endcap() == 2) ? -1 : 1;
   _wheel = (_endcap < 0) ? -4 : 4;
   _sector = csctrack.sector();
@@ -34,24 +30,12 @@ InternalTrack::InternalTrack(const L1MuRegionalCand& rpctrack,
   L1MuRegionalCand(rpctrack) {
   _parentlink = rpclink;
   _mode = 0;
-  _type = rpctrack.type_idx();
   _endcap = -99;
   _wheel  = -99;
   _sector = -99;
 }
 
-InternalTrack::InternalTrack(const InternalTrackRef& parent):
-  L1MuRegionalCand(*parent) {  
-  _associatedStubs = parent->getStubs();
-  _endcap = parent->endcap();
-  _wheel  = parent->wheel();
-  _sector = parent->sector();
-  _type   = 5; // type 4 is HCAL now
-  _mode   = parent->mode();
-  _parent = RegionalCandBaseRef(parent);
-}
-
-unsigned InternalTrack::type_idx() const {  
+unsigned InternalTrack::type_idx() const {
   if( _parent.isNonnull() ) return L1MuRegionalCand::type_idx();
   return _type;
 }
@@ -74,14 +58,6 @@ void InternalTrack::addStub(const TriggerPrimitiveRef& stub) {
     if(stub->detId<RPCDetId>().region() != 0) 
       offset = kRPCf;
     station = stub->detId<RPCDetId>().station(); 
-    break;
-  case TriggerPrimitive::kGEM:    
-    offset = kGEM;
-    station = stub->detId<GEMDetId>().station();
-    break;
-  case TriggerPrimitive::kHCAL:    
-    offset = kHCAL;
-    station = stub->detId<HcalTrigTowerDetId>().depth()+1;
     break;
   default:
     throw cms::Exception("Invalid Subsytem") 
@@ -112,14 +88,9 @@ void InternalTrack::print(std::ostream& out) const {
 	    << mode() << std::dec << std::endl;
   std::cout << "\tMode Breakdown: " << std::hex
 	    << " DT: " << dtMode() << " RPCb: " << rpcbMode()
-	    << " CSC: " << cscMode() << " RPCf: " << rpcfMode()
-	    << " GEM: " << gemMode()
-	    << " HCAL: " << hcalMode()
+	    << " CSC: " << cscMode() << " RPCf: " << rpcfMode() 
 	    << std::dec << std::endl;
-  std::cout << "\t BX             : " << bx() << std::endl;
-  std::cout << "\tQuality         : " << quality() << std::endl;
-  std::cout << "\tPt Packed/Value : " << pt_packed() 
-	    << " / " << ptValue() << std::endl;
+  std::cout << "\tQuality: " << quality() << std::endl;
   DTTrackRef dtparent;
   CSCTrackRef cscparent;
   RegionalCandRef rpcparent;
@@ -216,10 +187,7 @@ void InternalTrack::print(std::ostream& out) const {
     std::cout << "\t Parent phi: " << rpcparent->phi_packed() << std::endl;
     std::cout << "\t Parent eta: " << rpcparent->eta_packed() << std::endl;
     break;
-  case 4: // HCAL
-    std::cout << "\tSomehow got in HCAL \"track\"!" << std::endl;
-    break;
-  case 5: // L1ITMu: it was case 4
+  case 4: // L1ITMu ?
     break;
   default:
     throw cms::Exception("Unknown Track Type") 

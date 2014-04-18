@@ -5,9 +5,7 @@
 <use name="DataFormats/CSCDigi"/>
 <use name="DataFormats/L1DTTrackFinder"/>
 <use name="DataFormats/RPCDigi"/>
-<use name="DataFormats/HcalDigi"/>
 <use name="DataFormats/MuonDetId"/>
-<use name="DataFormats/HcalDetId"/>
 <use name="DataFormats/L1CSCTrackFinder"/>
 <use name="DataFormats/Common"/>
 <use name="L1Trigger/DTTrackFinder"/>

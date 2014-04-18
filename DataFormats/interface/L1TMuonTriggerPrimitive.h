@@ -37,20 +37,12 @@ class CSCDetId;
 class RPCDigiL1Link;
 class RPCDetId;
 
-// GEM digi types
-class GEMDigi;
-class GEMDetId;
-
-// HO digi types
-class HcalTrigTowerDetId;
-class HcalTriggerPrimitiveDigi;
-
 namespace L1TMuon {
 
   class TriggerPrimitive {
   public:
     // define the subsystems that we have available
-    enum subsystem_type{kDT,kCSC,kRPC,kGEM,kHCAL,kNSubsystems};
+    enum subsystem_type{kDT,kCSC,kRPC,kNSubsystems};
     
     // define the data we save locally from each subsystem type
     // variables in these structs keep their colloquial meaning
@@ -79,8 +71,6 @@ namespace L1TMuon {
       uint16_t bx0; 
       uint16_t syncErr;
       uint16_t cscID;
-      //uint16_t gemBX;
-      float gemDPhi;
     };
 
     struct DTData {
@@ -109,21 +99,7 @@ namespace L1TMuon {
       int theta_code;
       int theta_quality;
     };
- 
-    struct GEMData {// GEMDigi only has strip and bx
-    GEMData() : strip(0), bx(0) {}
-      uint16_t strip;
-      uint16_t bx;
-    };
-
-    struct HCALData {
-      HCALData() : size(0), SOI_fineGrain(false), SOI_compressedEt(0) {}
-      // Some pieces of info from HcalTriggerPrimitiveDigi
-      int size;
-      bool SOI_fineGrain;
-      int SOI_compressedEt;
-    };
-   
+    
     //Persistency
     TriggerPrimitive(): _subsystem(kNSubsystems) {}
       
@@ -147,15 +123,7 @@ namespace L1TMuon {
 		     const unsigned layer,
 		     const uint16_t bx);
     
-    //GEM
-    TriggerPrimitive(const GEMDetId&,
-		     const GEMDigi&);
-
-    //HCAL
-    TriggerPrimitive(const HcalTrigTowerDetId& detid,
-		     const HcalTriggerPrimitiveDigi&); 
-
-   //copy
+    //copy
     TriggerPrimitive(const TriggerPrimitive&);
 
     TriggerPrimitive& operator=(const TriggerPrimitive& tp);
@@ -177,15 +145,12 @@ namespace L1TMuon {
 
     template<typename IDType>
       IDType detId() const { return IDType(_id); }
-    //IDType detId() const { return IDType(_id.rawId()); }
 
     // accessors to raw subsystem data
     const DTData  getDTData()  const { return _dt;  }
     const CSCData getCSCData() const { return _csc; }
     const RPCData getRPCData() const { return _rpc; }      
-    const GEMData getGEMData() const { return _gem; }
-    const HCALData getHCALData() const { return _hcal; }
-
+    
     // consistent accessors to common information    
     const int getBX() const;
     const int getStrip() const;
@@ -210,19 +175,11 @@ namespace L1TMuon {
     void calculateRPCGlobalSector(const RPCDetId& chid, 
 				  unsigned& global_sector, 
 				  unsigned& subsector );
-    void calculateGEMGlobalSector(const GEMDetId& chid, 
-				  unsigned& global_sector, 
-				  unsigned& subsector );
-    void calculateHCALGlobalSector(const HcalTrigTowerDetId& chid, 
-				   unsigned& global_sector, 
-				   unsigned& subsector );
       
     DTData  _dt;
     CSCData _csc;
     RPCData _rpc;
-    GEMData _gem;
-    HCALData _hcal;
-
+    
     DetId _id;
     
     subsystem_type _subsystem;
