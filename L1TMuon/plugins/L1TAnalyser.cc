@@ -74,6 +74,10 @@ private:
     16.0,  18.0,  20.0,  25.0,  30.0,  35.0,  40.0,  45.0, 
     50.0,  60.0,  70.0,  80.0,  90.0, 100.0, 120.0, 140.0, 1.E6 };
 
+  const float pta_etabins[16] = 
+    {0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 
+     1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4};
+
   const double ME11GEMdPhi[9][3] = {
     {-2 , 1.0, 1.0 },
     {3 , 0.03971647, 0.01710244 },
@@ -186,6 +190,11 @@ private:
   TH1F* h_L1CSCTrack_eta[nptbins][nstubbins][nMEbins];
   TH1F* h_L1CSCTrack_phi[netabins][nptbins][nstubbins][nMEbins];
 
+  TH1F* h_pta[15][nstubbins];
+  TH1F* h_pta_efficiency[15][nstubbins];
+  TH1F* h_pta_eta[nstubbins];
+  TH1F* h_pta_efficiency_eta[nstubbins];
+
   TH1F* h_TFnStubinTrack_phihole;
 
 };
@@ -216,7 +225,6 @@ L1TAnalyser::L1TAnalyser(const edm::ParameterSet& iConfig)
 }
 L1TAnalyser::~L1TAnalyser()
 {
- 
   // do anything here that needs to be done at desctruction time
   // (e.g. close files, deallocate resources etc.)
   //  delete runSRLUTs;
@@ -242,123 +250,143 @@ L1TAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   n_events++;
   edm::SimTrackContainer::const_iterator BaseSimTrk;
   for(BaseSimTrk=BaseSimTracks->begin(); BaseSimTrk != BaseSimTracks->end(); BaseSimTrk++){
-    if (BaseSimTrk->momentum().eta() < 0.0) // temp for neg endcap
-      if ((fabs(BaseSimTrk->type()) == 13) &&
-	  (BaseSimTrk->momentum().pt() >= min_pt) &&
-	  (BaseSimTrk->momentum().pt() <= max_pt) &&
-	  (fabs(BaseSimTrk->momentum().eta()) >= min_aEta) && 
-	  (fabs(BaseSimTrk->momentum().eta()) <= max_aEta) ){
-	TLorentzVector truemuon; 
-	truemuon.SetPtEtaPhiE(BaseSimTrk->momentum().pt(), BaseSimTrk->momentum().eta(), BaseSimTrk->momentum().phi(), BaseSimTrk->momentum().E());
-	TLorentzVector l1muon;      
+    if ((fabs(BaseSimTrk->type()) == 13) &&
+	(BaseSimTrk->momentum().eta() < 0.0) &&// temp for neg endcap
+	(BaseSimTrk->momentum().pt() >= min_pt) &&
+	(BaseSimTrk->momentum().pt() <= max_pt) &&
+	(fabs(BaseSimTrk->momentum().eta()) >= min_aEta) && 
+	(fabs(BaseSimTrk->momentum().eta()) <= max_aEta) ){
+      TLorentzVector truemuon; 
+      truemuon.SetPtEtaPhiE(BaseSimTrk->momentum().pt(), BaseSimTrk->momentum().eta(), BaseSimTrk->momentum().phi(), BaseSimTrk->momentum().E());
+      TLorentzVector l1muon;      
 
-	int nstubs=0;
-	unsigned int sign = 0;
-	unsigned int charge = 0;
-	float tempDRMatch = 10;
-	bool hasME1=false;
-	bool hasME2=false;
-	float GE11dPhi=-99.;
-	float GE21dPhi=-99.;
-	bool passGE11=false;
-	bool passGE21=false;
-	csc::L1Track matched_l1track;
-	L1CSCTrackCollection::const_iterator tmp_trk = l1csctracks->begin();
-	L1CSCTrackCollection::const_iterator matched_l1trackIT;
-	for(; tmp_trk != l1csctracks->end(); tmp_trk++){
-	  float pt=0, eta=-9, phi=-9;
-	  unsigned int quality_packed=0, rank=0;// ptLUTAddress=0;
-	  unsigned int pt_packed=0;
+      int nstubs=0;
+      unsigned int sign = 0;
+      unsigned int charge = 0;
+      float tempDRMatch = 10;
+      bool hasME1=false;
+      bool hasME2=false;
+      float GE11dPhi=-99.;
+      float GE21dPhi=-99.;
+      bool passGE11=false;
+      bool passGE21=false;
+      csc::L1Track matched_l1track;
+      L1CSCTrackCollection::const_iterator tmp_trk = l1csctracks->begin();
+      L1CSCTrackCollection::const_iterator matched_l1trackIT;
+      for(; tmp_trk != l1csctracks->end(); tmp_trk++){
+	float pt=0, eta=-9, phi=-9;
+	unsigned int quality_packed=0, rank=0;// ptLUTAddress=0;
+	unsigned int pt_packed=0;
 
-	  auto l1track = tmp_trk->first;
-	  rank=l1track.rank();
-	  //ptLUTAddress = l1track.ptLUTAddress();
-	  ptadd ptLUTAddress(l1track.ptLUTAddress());
+	auto l1track = tmp_trk->first;
+	rank=l1track.rank();
+	//ptLUTAddress = l1track.ptLUTAddress();
+	ptadd ptLUTAddress(l1track.ptLUTAddress());
+	int mode = ptLUTAddress.track_mode;
 
-	  l1track.decodeRank(rank,pt_packed,quality_packed); //get the pt and gaulity packed
-	  pt = ptscale[pt_packed];
+	l1track.decodeRank(rank,pt_packed,quality_packed); //get the pt and gaulity packed
+	pt = ptscale[pt_packed];
 	
-	  unsigned int sector = l1track.sector();// get sector
-	  edm::ESHandle< L1MuTriggerScales > scales;//get structures for scales (phi and eta
-	  iSetup.get< L1MuTriggerScalesRcd >().get(scales); // get scales from EventSetup
-	  const L1MuTriggerScales  *ts;// the trigger scales 
-	  ts = scales.product();
-	  unsigned gbl_phi = l1track.localPhi() + ((sector - 1)*24) + 6;
-	  if(gbl_phi > 143) gbl_phi -= 143;
-	  phi = ts->getPhiScale()->getLowEdge( gbl_phi&0xff );
-	  unsigned eta_sign = (l1track.endcap() == 1 ? 0 : 1);
-	  eta = ts->getRegionalEtaScale(2)->getCenter( ((l1track.eta_packed()) | (eta_sign<<5)) & 0x3f );
+	unsigned int sector = l1track.sector();// get sector
+	edm::ESHandle< L1MuTriggerScales > scales;//get structures for scales (phi and eta
+	iSetup.get< L1MuTriggerScalesRcd >().get(scales); // get scales from EventSetup
+	const L1MuTriggerScales  *ts;// the trigger scales 
+	ts = scales.product();
+	unsigned gbl_phi = l1track.localPhi() + ((sector - 1)*24) + 6;
+	if(gbl_phi > 143) gbl_phi -= 143;
+	phi = ts->getPhiScale()->getLowEdge( gbl_phi&0xff );
+	unsigned eta_sign = (l1track.endcap() == 1 ? 0 : 1);
+	eta = ts->getRegionalEtaScale(2)->getCenter( ((l1track.eta_packed()) | (eta_sign<<5)) & 0x3f );
 	
-	  unsigned int tempsign = l1track.charge_packed();
-	  unsigned int tempcharge = ptLUTAddress.delta_phi_sign;
+	unsigned int tempsign = l1track.charge_packed();
+	unsigned int tempcharge = ptLUTAddress.delta_phi_sign;
 
-	  int tempnstubs = 0;
-	  bool temphasME1=false;
-	  bool temphasME2=false;
-	  float tempGE11dPhi=-99.;
-	  float tempGE21dPhi=-99.;
-	  bool temppassGE11=false;
-	  bool temppassGE21=false;
+	int tempnstubs = 0;
+	bool temphasME1=false;
+	bool temphasME2=false;
+	float tempGE11dPhi=-99.;
+	float tempGE21dPhi=-99.;
+	bool temppassGE11=false;
+	bool temppassGE21=false;
 
-	  TLorentzVector templ1muon;
-	  templ1muon.SetPtEtaPhiM(pt, eta, phi, 0.1057);
-	  CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=tmp_trk->second.begin();
-	  for(; csc!=tmp_trk->second.end(); csc++){
-	    bool is_odd = ((*csc).first.chamber()%2==1);
-	    if ((*csc).first.station()==1){
-	      temphasME1 = true;
-	      tempGE11dPhi = (*csc).second.first->getGEMDPhi();
+	TLorentzVector templ1muon;
+	templ1muon.SetPtEtaPhiM(pt, eta, phi, 0.1057);
+	CSCCorrelatedLCTDigiCollection::DigiRangeIterator csc=tmp_trk->second.begin();
+	for(; csc!=tmp_trk->second.end(); csc++){
+	  bool is_odd = ((*csc).first.chamber()%2==1);
+	  if ((*csc).first.station()==1){
+	    temphasME1 = true;
+	    tempGE11dPhi = (*csc).second.first->getGEMDPhi();
 
-	      if ((tempsign == 1 && tempGE11dPhi < 0) || (tempsign == 0 && tempGE11dPhi > 0) || fabs(tempGE11dPhi) < 0.001){
-		for (int b = 0; b < 9; b++){ // cutting on gem csc dPhi
-		  if (double(pt) >= ME11GEMdPhi[b][0]){
-		    if ((is_odd && ME11GEMdPhi[b][1] > fabs(tempGE11dPhi)) || 
-		     	(!is_odd && ME11GEMdPhi[b][2] > fabs(tempGE11dPhi))){
-		      temppassGE11 = true;
-		    }
-		    else temppassGE11 = false;
+	    if ((tempsign == 1 && tempGE11dPhi < 0) || (tempsign == 0 && tempGE11dPhi > 0) || fabs(tempGE11dPhi) < 0.001){
+	      for (int b = 0; b < 9; b++){ // cutting on gem csc dPhi
+		if (double(pt) >= ME11GEMdPhi[b][0]){
+		  if ((is_odd && ME11GEMdPhi[b][1] > fabs(tempGE11dPhi)) || 
+		      (!is_odd && ME11GEMdPhi[b][2] > fabs(tempGE11dPhi))){
+		    temppassGE11 = true;
 		  }
+		  else temppassGE11 = false;
 		}
 	      }
-	      if (tempGE11dPhi < -50) temppassGE11 = true;// no gem match, pass
 	    }
-	    if ((*csc).first.station()==2){
-	      temphasME2 = true;
-	      tempGE21dPhi = (*csc).second.first->getGEMDPhi();
-	      for (int b = 0; b < 9; b++){
-		if (double(pt) >= ME21GEMdPhi[b][0]){
-		  if ((is_odd && ME21GEMdPhi[b][1] > fabs(tempGE21dPhi)) ||
-		      (!is_odd && ME21GEMdPhi[b][2] > fabs(tempGE21dPhi))){
-		    temppassGE21 = true;
-		  }
-		  else temppassGE21 = false;
-		}
-	      }
-	      if (tempGE21dPhi < -50) temppassGE21 = true;
-	    }
-	    tempnstubs++;
+	    if (tempGE11dPhi < -50) temppassGE11 = true;// no gem match, pass
 	  }
+	  if ((*csc).first.station()==2){
+	    temphasME2 = true;
+	    tempGE21dPhi = (*csc).second.first->getGEMDPhi();
+	    for (int b = 0; b < 9; b++){
+	      if (double(pt) >= ME21GEMdPhi[b][0]){
+		if ((is_odd && ME21GEMdPhi[b][1] > fabs(tempGE21dPhi)) ||
+		    (!is_odd && ME21GEMdPhi[b][2] > fabs(tempGE21dPhi))){
+		  temppassGE21 = true;
+		}
+		else temppassGE21 = false;
+	      }
+	    }
+	    if (tempGE21dPhi < -50) temppassGE21 = true;
+	  }
+	  tempnstubs++;
+	}
 
-	  if (truemuon.DeltaR(templ1muon) < minDRMatch){
-	    if (tempnstubs >= nstubs){
-	      if (truemuon.DeltaR(templ1muon) < tempDRMatch){
-		nstubs = tempnstubs;
-		tempDRMatch = truemuon.DeltaR(templ1muon);
-		l1muon = templ1muon;
-		hasME1 = temphasME1;
-		hasME2 = temphasME2;
-		GE11dPhi=tempGE11dPhi;
-		GE21dPhi=tempGE21dPhi;
-		passGE11=temppassGE11;
-		passGE21=temppassGE21;
-		matched_l1trackIT = tmp_trk;
-		sign = tempsign;
-		charge = tempcharge;
+	if (truemuon.DeltaR(templ1muon) < minDRMatch){
+	  if (tempnstubs >= nstubs){
+	    if (truemuon.DeltaR(templ1muon) < tempDRMatch){
+	      nstubs = tempnstubs;
+	      tempDRMatch = truemuon.DeltaR(templ1muon);
+	      l1muon = templ1muon;
+	      hasME1 = temphasME1;
+	      hasME2 = temphasME2;
+	      GE11dPhi=tempGE11dPhi;
+	      GE21dPhi=tempGE21dPhi;
+	      passGE11=temppassGE11;
+	      passGE21=temppassGE21;
+	      matched_l1trackIT = tmp_trk;
+	      sign = tempsign;
+	      charge = tempcharge;
+	    }
+	  }
+	}
+	  
+	float trueAbsEta = fabs(truemuon.Eta());
+
+	// pt assignment LUTs
+	if (truemuon.Pt() >= 15){
+	  for(int iETA = 0; iETA < 15; iETA++){
+	    if(fabs(trueAbsEta) >= pta_etabins[iETA] && fabs(trueAbsEta) < pta_etabins[iETA+1] ){	    
+	      for (int nstubbin = 0; nstubbin < nstubbins; nstubbin++){
+		if (((nstubbin == stub_2) && (nstubs == 2)) ||
+		    ((nstubbin == stub_3) && (nstubs == 3)) ||
+		    ((nstubbin == stub_4) && (nstubs == 4))){
+		  h_pta_eta[nstubbin]->Fill(trueAbsEta);
+		  h_pta[iETA][nstubbin]->Fill(mode);
+		  if (l1muon.Pt() >= 10)
+		    h_pta_efficiency_eta[nstubbin]->Fill(trueAbsEta);
+		    h_pta_efficiency[iETA][nstubbin]->Fill(mode);
+		}
 	      }
 	    }
 	  }
 	}
-      
 	// testing for eff drop at phi~0
 	// if (nstubs)
 	// if (BaseSimTrk->momentum().eta() > 1.6 and BaseSimTrk->momentum().eta() < 1.75){
@@ -390,7 +418,6 @@ L1TAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	// 	}
 	// }
 
-	float trueAbsEta = fabs(truemuon.Eta());
 	//      float trueEta = truemuon.Eta();
 	// if (nstubs > 1 && trueAbsEta > 2.1){
 	if (nstubs > 1){
@@ -445,11 +472,11 @@ L1TAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 			    if (debugTF && netabin == eta_all && nptbin == pt_all && truemuon.Pt() >= 10 
 				&& nstubbin == stub_2 && nMEbin == ME_all){
 			      if (nstubs < 3 && nstubs > 1){ 
-				  cout << "no 3 nstubs = "<< nstubs
-				  << " pt = "<< truemuon.Pt()
-				  << ", eta = "<< truemuon.Eta()
-				  << ", phi = "<< truemuon.Phi()
-				  << endl;
+				cout << "no 3 nstubs = "<< nstubs
+				     << " pt = "<< truemuon.Pt()
+				     << ", eta = "<< truemuon.Eta()
+				     << ", phi = "<< truemuon.Phi()
+				     << endl;
 			      }
 			    } 
 			    //if (netabin == eta_all) h_L1CSCTrack_eta[nptbin][nstubbin][nMEbin]->Fill(trueEta);
@@ -463,104 +490,105 @@ L1TAnalyser::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    }
 	  }
 	}
+      }
 
-	if (debugTF){
-	  // debug to see where stubs are lost
-	  //float gemDphi = -99;
-	  hasME1 = false;
-	  int nlcts = 0;
-	  CSCCorrelatedLCTDigiCollection::DigiRangeIterator Citer;
+      if (debugTF){
+	// debug to see where stubs are lost
+	//float gemDphi = -99;
+	hasME1 = false;
+	int nlcts = 0;
+	CSCCorrelatedLCTDigiCollection::DigiRangeIterator Citer;
+	for(Citer = lcts->begin(); Citer != lcts->end(); Citer++){
+	  if ( (truemuon.Eta() > 0 && (*Citer).first.endcap() == 1) ||
+	       (truemuon.Eta() < 0 && (*Citer).first.endcap() == 2) ){
+	    if ((*Citer).first.station()) nlcts++;
+
+	    if ((*Citer).first.station()==1){
+	      hasME1 = true;
+	      //gemDphi = (*Citer).second.first->getGEMDPhi();
+	    }
+	  }
+	}
+	//if (nstubs < 3 && nlcts > 2){
+	if (nstubs ==2){
+	  n_No3stub++;
+	  if (debugTF) cout <<"event "<< n_events << " No3stub "<< n_No3stub<<endl;
+	  //if (nlcts > 2){
+	  cout << "BaseSimTrk->type() " << BaseSimTrk->type()
+	       << " charge = " <<charge
+	       << " GE11dPhi = " <<GE11dPhi
+	       << " sign = " <<sign <<endl;
+
+	  cout << "nstubs = "<< nstubs
+	       << " pt = "<< truemuon.Pt()
+	       << ", eta = "<< truemuon.Eta()
+	       << ", phi = "<< truemuon.Phi()
+	       << endl;
+	  printf("sta sec sub Valid Quality etaPacked phiPacked cscid CLCTPattern BX gemDPhi\n");
+	  // making stubs
 	  for(Citer = lcts->begin(); Citer != lcts->end(); Citer++){
 	    if ( (truemuon.Eta() > 0 && (*Citer).first.endcap() == 1) ||
 		 (truemuon.Eta() < 0 && (*Citer).first.endcap() == 2) ){
-	      if ((*Citer).first.station()) nlcts++;
 
-	      if ((*Citer).first.station()==1){
-		hasME1 = true;
-		//gemDphi = (*Citer).second.first->getGEMDPhi();
+	      CSCCorrelatedLCTDigiCollection::const_iterator Diter = (*Citer).second.first;
+	      CSCCorrelatedLCTDigiCollection::const_iterator Dend = (*Citer).second.second;
+	      for(; Diter != Dend; Diter++){
+		csctf::TrackStub stubi((*Diter),(*Citer).first);
+
+		CSCDetId id(stubi.getDetId().rawId());
+		unsigned fpga = (id.station() == 1) ? CSCTriggerNumbering::triggerSubSectorFromLabels(id) - 1 : id.station();
+	      
+		int sectorbin = stubi.sector() - 1;
+		int endcapbin = (*Citer).first.endcap() - 1;
+
+		lclphidat lclPhi;
+		try {
+		  lclPhi = srLUTs_[fpga][endcapbin][sectorbin]->localPhi(stubi.getStrip(), stubi.getPattern(), stubi.getQuality(), stubi.getBend());
+		} catch( cms::Exception &e ) {
+		  bzero(&lclPhi,sizeof(lclPhi));
+		  edm::LogWarning("CSCTFSectorProcessor:run()") << "Exception from LocalPhi LUT in " << fpga
+								<< "(strip="<<stubi.getStrip()<<",pattern="<<stubi.getPattern()<<",quality="<<stubi.getQuality()<<",bend="<<stubi.getBend()<<")" <<std::endl;
+		}
+		gblphidat gblPhi;
+		try {
+		  unsigned csc_id = stubi.cscid();
+		  if (!m_gangedME1a) csc_id = stubi.cscidSeparateME1a();
+		  gblPhi = srLUTs_[fpga][endcapbin][sectorbin]->globalPhiME(lclPhi.phi_local, stubi.getKeyWG(), csc_id);
+        
+		} catch( cms::Exception &e ) {
+		  bzero(&gblPhi,sizeof(gblPhi));
+		  edm::LogWarning("CSCTFSectorProcessor:run()") << "Exception from GlobalPhi LUT in " << fpga
+								<< "(phi_local="<<lclPhi.phi_local<<",KeyWG="<<stubi.getKeyWG()<<",csc="<<stubi.cscid()<<")"<<std::endl;
+		}
+		gbletadat gblEta;
+		try {
+		  unsigned csc_id = stubi.cscid();
+		  if (!m_gangedME1a) csc_id = stubi.cscidSeparateME1a();
+		  gblEta = srLUTs_[fpga][endcapbin][sectorbin]->globalEtaME(lclPhi.phi_bend_local, lclPhi.phi_local, stubi.getKeyWG(), csc_id);
+		} catch( cms::Exception &e ) {
+		  bzero(&gblEta,sizeof(gblEta));
+		  edm::LogWarning("CSCTFSectorProcessor:run()") << "Exception from GlobalEta LUT in " << fpga
+								<< "(phi_bend_local="<<lclPhi.phi_bend_local<<",phi_local="<<lclPhi.phi_local<<",KeyWG="<<stubi.getKeyWG()<<",csc="<<stubi.cscid()<<")"<<std::endl;
+		}
+
+		stubi.setEtaPacked(gblEta.global_eta);
+		stubi.setPhiPacked(gblPhi.global_phi);
+
+		bool Vp   = stubi.isValid();
+		int Qp   = stubi.getQuality();
+		unsigned Etap = stubi.etaPacked();
+		unsigned Phip = stubi.phiPacked();
+		unsigned CSCIdp  = stubi.cscid();
+		int CLCTp  = stubi.getCLCTPattern();
+		//printf("station sector subsec Valid Quality etaPacked phiPacked cscid CLCTPattern BX \n");
+		printf(" %1i %3i %3i  %3i  %5i  %7i %9i %9i %5i    %3i  %7.4f \n",(*Citer).first.station(), stubi.sector(), stubi.subsector(), Vp, Qp, Etap, Phip, CSCIdp, CLCTp, stubi.BX(), stubi.getGEMDPhi());
+
 	      }
 	    }
 	  }
-	  //if (nstubs < 3 && nlcts > 2){
-	  if (nstubs ==2){
-	    n_No3stub++;
-	    if (debugTF) cout <<"event "<< n_events << " No3stub "<< n_No3stub<<endl;
-	    //if (nlcts > 2){
-	    cout << "BaseSimTrk->type() " << BaseSimTrk->type()
-		 << " charge = " <<charge
-		 << " GE11dPhi = " <<GE11dPhi
-		 << " sign = " <<sign <<endl;
-
-	    cout << "nstubs = "<< nstubs
-		 << " pt = "<< truemuon.Pt()
-		 << ", eta = "<< truemuon.Eta()
-		 << ", phi = "<< truemuon.Phi()
-		 << endl;
-	    printf("sta sec sub Valid Quality etaPacked phiPacked cscid CLCTPattern BX gemDPhi\n");
-	    // making stubs
-	    for(Citer = lcts->begin(); Citer != lcts->end(); Citer++){
-	      if ( (truemuon.Eta() > 0 && (*Citer).first.endcap() == 1) ||
-		   (truemuon.Eta() < 0 && (*Citer).first.endcap() == 2) ){
-
-		CSCCorrelatedLCTDigiCollection::const_iterator Diter = (*Citer).second.first;
-		CSCCorrelatedLCTDigiCollection::const_iterator Dend = (*Citer).second.second;
-		for(; Diter != Dend; Diter++){
-		  csctf::TrackStub stubi((*Diter),(*Citer).first);
-
-		  CSCDetId id(stubi.getDetId().rawId());
-		  unsigned fpga = (id.station() == 1) ? CSCTriggerNumbering::triggerSubSectorFromLabels(id) - 1 : id.station();
-	      
-		  int sectorbin = stubi.sector() - 1;
-		  int endcapbin = (*Citer).first.endcap() - 1;
-
-		  lclphidat lclPhi;
-		  try {
-		    lclPhi = srLUTs_[fpga][endcapbin][sectorbin]->localPhi(stubi.getStrip(), stubi.getPattern(), stubi.getQuality(), stubi.getBend());
-		  } catch( cms::Exception &e ) {
-		    bzero(&lclPhi,sizeof(lclPhi));
-		    edm::LogWarning("CSCTFSectorProcessor:run()") << "Exception from LocalPhi LUT in " << fpga
-								  << "(strip="<<stubi.getStrip()<<",pattern="<<stubi.getPattern()<<",quality="<<stubi.getQuality()<<",bend="<<stubi.getBend()<<")" <<std::endl;
-		  }
-		  gblphidat gblPhi;
-		  try {
-		    unsigned csc_id = stubi.cscid();
-		    if (!m_gangedME1a) csc_id = stubi.cscidSeparateME1a();
-		    gblPhi = srLUTs_[fpga][endcapbin][sectorbin]->globalPhiME(lclPhi.phi_local, stubi.getKeyWG(), csc_id);
-        
-		  } catch( cms::Exception &e ) {
-		    bzero(&gblPhi,sizeof(gblPhi));
-		    edm::LogWarning("CSCTFSectorProcessor:run()") << "Exception from GlobalPhi LUT in " << fpga
-								  << "(phi_local="<<lclPhi.phi_local<<",KeyWG="<<stubi.getKeyWG()<<",csc="<<stubi.cscid()<<")"<<std::endl;
-		  }
-		  gbletadat gblEta;
-		  try {
-		    unsigned csc_id = stubi.cscid();
-		    if (!m_gangedME1a) csc_id = stubi.cscidSeparateME1a();
-		    gblEta = srLUTs_[fpga][endcapbin][sectorbin]->globalEtaME(lclPhi.phi_bend_local, lclPhi.phi_local, stubi.getKeyWG(), csc_id);
-		  } catch( cms::Exception &e ) {
-		    bzero(&gblEta,sizeof(gblEta));
-		    edm::LogWarning("CSCTFSectorProcessor:run()") << "Exception from GlobalEta LUT in " << fpga
-								  << "(phi_bend_local="<<lclPhi.phi_bend_local<<",phi_local="<<lclPhi.phi_local<<",KeyWG="<<stubi.getKeyWG()<<",csc="<<stubi.cscid()<<")"<<std::endl;
-		  }
-
-		  stubi.setEtaPacked(gblEta.global_eta);
-		  stubi.setPhiPacked(gblPhi.global_phi);
-
-		  bool Vp   = stubi.isValid();
-		  int Qp   = stubi.getQuality();
-		  unsigned Etap = stubi.etaPacked();
-		  unsigned Phip = stubi.phiPacked();
-		  unsigned CSCIdp  = stubi.cscid();
-		  int CLCTp  = stubi.getCLCTPattern();
-		  //printf("station sector subsec Valid Quality etaPacked phiPacked cscid CLCTPattern BX \n");
-		  printf(" %1i %3i %3i  %3i  %5i  %7i %9i %9i %5i    %3i  %7.4f \n",(*Citer).first.station(), stubi.sector(), stubi.subsector(), Vp, Qp, Etap, Phip, CSCIdp, CLCTp, stubi.BX(), stubi.getGEMDPhi());
-
-		}
-	      }
-	    }
-	  }// end of debug
-	}
+	}// end of debug
       }
+    }
   }
   
   // all lcts
@@ -637,6 +665,17 @@ void L1TAnalyser::beginJob()
   TString ptbinsName[] = {"", "pt15", "pt20"};
   TString stubbinsName[] = {"stub2", "stub3", "stub4"};
   TString MEbinsName[] = {"", "hasME1", "hasGE11", "hasME2", "hasGE21", "hasGE11GE21"};
+
+  for (int nstubbin = 0; nstubbin < nstubbins; nstubbin++){
+      h_pta_eta[nstubbin] = new TH1F("pta_eta_"+stubbinsName[nstubbin], "", 15, 1.5, 3);
+      h_pta_efficiency_eta[nstubbin] = fs->make<TH1F>("pta_eff_eta_"+stubbinsName[nstubbin], "", 15, 1.5, 3);
+    for(int iETA = 0; iETA < 15; iETA++){
+      TString pta_etabinname = stubbinsName[nstubbin]+"etabin_"+ TString::Itoa(iETA,10);
+      h_pta[iETA][nstubbin] = new TH1F("pta_"+pta_etabinname, "", 20, 0, 20);
+      h_pta_efficiency[iETA][nstubbin] = fs->make<TH1F>("pta_eff_"+pta_etabinname, "", 20, 0, 20);
+    }
+  }
+
   for (int nstubbin = 0; nstubbin < nstubbins; nstubbin++){
     for (int netabin = 0; netabin < netabins; netabin++){
       for (int nptbin = 0; nptbin < nptbins; nptbin++){
@@ -797,6 +836,18 @@ void L1TAnalyser::beginJob()
 // ------------ method called once each job just after ending the event loop  ------------
 void L1TAnalyser::endJob() 
 {
+
+  for (int nstubbin = 0; nstubbin < nstubbins; nstubbin++){
+    h_pta_eta[nstubbin]->Sumw2();
+    h_pta_efficiency_eta[nstubbin]->Sumw2();
+    h_pta_efficiency_eta[nstubbin]->Divide(h_pta_efficiency_eta[nstubbin], h_pta_eta[nstubbin],1.0,1.0,"B");
+    for(int iETA = 0; iETA < 15; iETA++){
+      h_pta[iETA][nstubbin]->Sumw2();
+      h_pta_efficiency[iETA][nstubbin]->Sumw2();
+      h_pta_efficiency[iETA][nstubbin]->Divide(h_pta_efficiency[iETA][nstubbin], h_pta[iETA][nstubbin],1.0,1.0,"B");
+    }
+  }
+
   for (int nstubbin = 0; nstubbin < nstubbins; nstubbin++){
     for (int netabin = 0; netabin < netabins; netabin++){
       for (int nptbin = 0; nptbin < nptbins; nptbin++){
