@@ -1,6 +1,7 @@
 runevents = 1000
 runevents = -1;
 
+
 import FWCore.ParameterSet.Config as cms
 process = cms.Process('L1analysis')
 
@@ -15,8 +16,12 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 10000
 #out_L1muon2023.root
 #out_L1muon2023GE11.root
 #out_L1muon2023GE21.root
-fileOutputName = "SingleMu_SLHC12_PU0"
-theInputFiles = ['file:SingleMu_SLHC12_PU0.root']
+
+#fileOutputName = "SingleMu_SLHC12_PU0"
+#theInputFiles = ['file:SingleMu_SLHC12_PU0.root']
+
+fileOutputName = "test"
+theInputFiles = ['file:/eos/uscms/store/user/lpcgem/dildick/DisplacedMuGEMCSCILT/dildick/DarkSUSY_mH_125_mGammaD_0400_ctau_00_14TeV_madgraph452_bridge224_LHE_pythia6_GEN_SIM/DarkSUSY_mH_125_mGammaD_0400_ctau_00_14TeV_madgraph452_bridge224_LHE_pythia6_DIGI_L1/75d0e84afc642f0aede2fcf263b4fa2e/out_L1_1_1_O8R.root']
 
 #fileOutputName = "out_L1muon2023GE21"
 #theInputFiles = ['file:out_L1muon2023GE21.root']
@@ -61,13 +66,19 @@ process.TFileService = cms.Service("TFileService",
 ))
 
 process.L1TAnalyser = cms.EDAnalyzer('L1TAnalyser',
-    #lctsTag = cms.InputTag("muonCSCDigis","MuonCSCCorrelatedLCTDigi"),
-    lctsTag = cms.InputTag('simCscTriggerPrimitiveDigis', 'MPCSORTED'),
-    vertexColTag = cms.InputTag("offlinePrimaryVertices"),
-    outTreeFileName = cms.untracked.string("lt1analysis.root"),
-    haveRECO = cms.untracked.bool(False),
-    singleSectorNum = cms.untracked.int32(-1) #-1 for sum over all sectors
-    )
+    minPt = cms.double(2.0),
+    maxPt = cms.double(100.0),
+    minEta = cms.double(1.6),
+    maxEta = cms.double(2.4),
+    SRLUT = cms.PSet(
+        Binary = cms.untracked.bool(False),
+        ReadLUTs = cms.untracked.bool(False),
+        LUTPath = cms.untracked.string('./'),
+        UseMiniLUTs = cms.untracked.bool(True)
+    ),
+    debugTF = cms.bool(False)
+)
+
 process.pL1TAnalyser = cms.Path(process.L1TAnalyser)
 
 process.schedule = cms.Schedule(process.pL1TAnalyser)
