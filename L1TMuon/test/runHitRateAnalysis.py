@@ -19,7 +19,7 @@ import os
 datadir = '/pnfs/user/jlee/data/DYToMuMu_M-20_TuneZ2star_14TeV-pythia6-tauola/TP2023HGCALDR-HGCALMar26_PU140BX25_PH2_1K_FB_V6-v2/GEN-SIM-DIGI-RAW/'
 #datadir = '/pnfs/user/jlee/data/DYToMuMu_M-20_TuneZ2star_14TeV-pythia6-tauola/TP2023HGCALDR-HGCALForMUO_PU200BX25_newsplit_PH2_1K_FB_V6-v1/GEN-SIM-DIGI-RAW/'
 for f in os.listdir(datadir):
-    if '4A8A0968-9BE2-E411-8445-00266CF9BCAC.root' in f:
+    if '50983EA5-1FE2-E411-91B1-008CFA010D18.root' in f:
         continue
     if '.root' in f:
         process.source.fileNames.append("file:"+datadir+f)

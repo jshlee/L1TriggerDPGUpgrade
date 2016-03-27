@@ -80,22 +80,27 @@ HitRateAnalysis::HitRateAnalysis(const edm::ParameterSet& iConfig)
   
   h_nchamber=fs->make<TH1F>("nchamber","nchamber",73,0,73);
   h_nchamber->GetXaxis()->SetTitle(Form("same digi hits within %2i BX", m_maxbx));
-  h_nchamber->GetYaxis()->SetTitle("Counts");
+  h_nchamber->GetYaxis()->SetTitle("Fraction");
 
   h_digiPerNBX=fs->make<TH1F>("digiPerNBX","digiPerNBX",10,0,10);
   h_digiPerNBX->GetXaxis()->SetTitle(Form("same digi hits within %2i BX", m_maxbx));
-  h_digiPerNBX->GetYaxis()->SetTitle("Counts");
+  h_digiPerNBX->GetYaxis()->SetTitle("Fraction");
   
   h_padPerNBX=fs->make<TH1F>("padPerNBX","padPerNBX",10,0,10);
   h_padPerNBX->GetXaxis()->SetTitle(Form("same pad hits within %2i BX", m_maxbx));
-  h_padPerNBX->GetYaxis()->SetTitle("Counts");
+  h_padPerNBX->GetYaxis()->SetTitle("Fraction");
   
   h_coPadPerNBX=fs->make<TH1F>("coPadPerNBX","coPadPerNBX",10,0,10);
   h_coPadPerNBX->GetXaxis()->SetTitle(Form("same coPad hits within %2i BX", m_maxbx));
-  h_coPadPerNBX->GetYaxis()->SetTitle("Counts");
+  h_coPadPerNBX->GetYaxis()->SetTitle("Fraction");
 
 }
-HitRateAnalysis::~HitRateAnalysis(){}
+HitRateAnalysis::~HitRateAnalysis()
+{
+  h_digiPerNBX->Scale(1./h_digiPerNBX->Integral());
+  h_padPerNBX->Scale(1./h_padPerNBX->Integral());
+  h_coPadPerNBX->Scale(1./h_coPadPerNBX->Integral());
+}
 void
 HitRateAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
