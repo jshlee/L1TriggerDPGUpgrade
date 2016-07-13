@@ -32,6 +32,13 @@ process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring("/store/user/calabria/NuGunGS/crab_SingleNu_TP2023HGCALDR_SLHC28/160708_135644/0000/out_digi_106.root")
 )
 
+FileList = 'SingleNu_TP2023HGCALDR_SLHC28.txt'
+ff = open(FileList, "r")
+files = ff.read().split('\n')
+ff.close()
+files = filter(lambda x: x.endswith('.root'),  files)
+process.source.fileNames = files
+
 # Output definition
 outCommands = cms.untracked.vstring('drop *')
 outCommands.append('keep *_genParticles_*_*')
