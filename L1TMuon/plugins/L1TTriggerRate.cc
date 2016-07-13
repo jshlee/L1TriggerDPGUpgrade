@@ -187,7 +187,7 @@ void L1TTriggerRate::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 	hasME1 = true;
 	GE11dPhi = (*csc).second.first->getGEMDPhi();
 	if (fabs(GE11dPhi) < 10){
-	  for (int b = 0; b < 9; b++){
+	  for (int b = 0; b < 8; b++){
 	    if ((sign == 1 && GE11dPhi < 0) || (sign == 0 && GE11dPhi > 0) || fabs(GE11dPhi) < 0.001){
 	      if (double(pt) >= ME11GEMdPhi[b][0]){
 		if ((is_odd && ME11GEMdPhi[b][1] > fabs(GE11dPhi)) || 
@@ -206,7 +206,7 @@ void L1TTriggerRate::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 	hasME2 = true;
 	GE21dPhi = (*csc).second.first->getGEMDPhi();
 	if (fabs(GE21dPhi) < 10){
-	  for (int b = 0; b < 9; b++){
+	  for (int b = 0; b < 8; b++){
 	    if ((sign == 1 && GE21dPhi < 0) || (sign == 0 && GE21dPhi > 0) || fabs(GE21dPhi) < 0.001){
 	      if (double(pt) >= ME21GEMdPhi[b][0]){
 		if ((is_odd && ME21GEMdPhi[b][1] > fabs(GE21dPhi)) || 
