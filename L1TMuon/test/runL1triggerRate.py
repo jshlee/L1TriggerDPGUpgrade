@@ -22,14 +22,14 @@ process.CSCIndexerESProducer= CSCIndexerESProducer
 from CalibMuon.CSCCalibration.CSCChannelMapper_cfi import CSCChannelMapperESProducer
 process.CSCChannelMapperESProducer= CSCChannelMapperESProducer
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(-1))
 fileOutputName = "out_L1.root"
 histofileName  = "histo_L1.root"
 # Input source
 process.source = cms.Source("PoolSource",
     secondaryFileNames = cms.untracked.vstring(),
-    fileNames = cms.untracked.vstring("file:out_digi_106.root")
-    #fileNames = cms.untracked.vstring("/store/user/calabria/NuGunGS/crab_SingleNu_TP2023HGCALDR_SLHC28/160708_135644/0000/out_digi_106.root")
+    #fileNames = cms.untracked.vstring("file:out_digi_106.root")
+    fileNames = cms.untracked.vstring("/store/user/calabria/NuGunGS/crab_SingleNu_TP2023HGCALDR_SLHC28/160708_135644/0000/out_digi_106.root")
 )
 
 # Output definition
@@ -59,7 +59,7 @@ process.TFileService = cms.Service("TFileService",
     )
 
 # Other statements
-process.L1TAnalyser = cms.EDAnalyzer('L1TAnalyser',
+process.L1TTriggerRate = cms.EDAnalyzer('L1TTriggerRate',
     minPt = cms.double(0.0),
     maxPt = cms.double(1000.0),
     minEta = cms.double(1.5),
@@ -76,12 +76,12 @@ process.L1TAnalyser = cms.EDAnalyzer('L1TAnalyser',
 # Path and EndPath definitions
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.FEVTDEBUGHLToutput_step = cms.EndPath(process.FEVTDEBUGHLToutput)
-process.L1simulation_step = cms.Path(process.SimL1Emulator)
-process.L1Extra_step = cms.Path(process.L1Extra)
-process.pL1TAnalyser = cms.Path(process.L1TAnalyser)
+#process.L1simulation_step = cms.Path(process.SimL1Emulator)
+#process.L1Extra_step = cms.Path(process.L1Extra)
+process.pL1TTriggerRate = cms.Path(process.L1TTriggerRate)
 
-process.schedule = cms.Schedule(process.L1simulation_step,process.L1Extra_step,process.endjob_step,process.FEVTDEBUGHLToutput_step,process.pL1TAnalyser)
-#process.schedule = cms.Schedule(process.endjob_step,process.FEVTDEBUGHLToutput_step,process.pL1TAnalyser)
+#process.schedule = cms.Schedule(process.L1simulation_step,process.L1Extra_step,process.endjob_step,process.FEVTDEBUGHLToutput_step,process.pL1TTriggerRate)
+process.schedule = cms.Schedule(process.endjob_step,process.FEVTDEBUGHLToutput_step,process.pL1TTriggerRate)
 
 #from RecoParticleFlow.PandoraTranslator.customizeHGCalPandora_cff import cust_2023HGCalPandoraMuon 
 #process = cust_2023HGCalPandoraMuon(process)

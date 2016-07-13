@@ -162,8 +162,8 @@ void L1TTriggerRate::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 {
   edm::Handle<L1CSCTrackCollection> l1csctracks;
   iEvent.getByLabel("simCsctfTrackDigis",l1csctracks);
-  edm::Handle<TriggerPrimitiveCollection> trigPrims;
-  iEvent.getByLabel("L1TMuonTriggerPrimitives",trigPrims);
+  //edm::Handle<TriggerPrimitiveCollection> trigPrims;
+  //iEvent.getByLabel("L1TMuonTriggerPrimitives",trigPrims);
   edm::Handle<CSCCorrelatedLCTDigiCollection> lcts;
   iEvent.getByLabel("simCscTriggerPrimitiveDigis","MPCSORTED", lcts);
   ++ntotalEvents;
