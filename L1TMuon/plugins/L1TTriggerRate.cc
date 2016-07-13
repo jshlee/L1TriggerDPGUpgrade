@@ -258,7 +258,7 @@ void L1TTriggerRate::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
 	      ((nMEbin == ME_2) && hasME2) ||
 	      ((nMEbin == GE_1) && passGE11) ||
 	      ((nMEbin == GE_2) && passGE21) ||
-	      ((nMEbin == GE_12) && passGE11 && passGE21) ){
+	      ((nMEbin == GE_12) && (passGE11 || passGE21)) ){
 	    
 	    for (int netabin = 0; netabin < netabins; netabin++){
 	      if ((netabin == eta_all) ||
